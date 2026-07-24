@@ -13,7 +13,7 @@ export function GameRound() {
   const [score, setScore] = useState<RoundScore | null>(null);
 
   useEffect(() => {
-    localJsonScenarioDataProvider.getScenario("toy-chipmaker-rally").then(setScenario);
+    localJsonScenarioDataProvider.getScenario("tsmc-2023-ai-rally").then(setScenario);
   }, []);
 
   const toggleNews = (id: string) => {
