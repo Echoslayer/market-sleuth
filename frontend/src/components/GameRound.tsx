@@ -40,20 +40,26 @@ export function GameRound() {
     setScore(scoreRound({ direction, selectedNewsIds }, scenario));
   };
 
-  if (!scenario) {
+  // Before submit, a scenario with a revealCutoffDate only shows what a
+  // player at that point in time would have seen (predictive mode). With
+  // no cutoff, everything is visible from the start (detective mode).
+  // scoreRound always sees the full scenario — a hidden key event the
+  // player couldn't select just shows up as "missed" once revealed.
+  // Memoised so newsItems keeps a stable identity (the swipe deck resets
+  // when it changes). Must stay ABOVE the early return — hooks run
+  // unconditionally — so it tolerates a null scenario.
+  const displayScenario = useMemo(
+    () => (scenario && !score ? visibleBeforeSubmit(scenario) : scenario),
+    [scenario, score],
+  );
+
+  if (!scenario || !displayScenario) {
     return (
       <main className="grid min-h-screen place-items-center bg-slate-100 text-slate-600">
         <p>Loading scenario…</p>
       </main>
     );
   }
-
-  // Before submit, a scenario with a revealCutoffDate only shows what a
-  // player at that point in time would have seen (predictive mode). With
-  // no cutoff, everything is visible from the start (detective mode).
-  // scoreRound always sees the full scenario — a hidden key event the
-  // player couldn't select just shows up as "missed" once revealed.
-  const displayScenario = useMemo(() => (score ? scenario : visibleBeforeSubmit(scenario)), [scenario, score]);
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
