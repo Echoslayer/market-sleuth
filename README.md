@@ -8,9 +8,9 @@ Play it at <https://echoslayer.github.io/market-sleuth/>.
 
 ## Status
 
-MVP playable. The game loop works end to end with the first real scenario (TSMC 2330, 2023 AI rally), deployed to GitHub Pages on every push to `main`. Two modes: detective (default) and an opt-in predictive reveal mode.
+MVP playable. The game loop works end to end, with news judged by swiping cards Tinder-style (right = key event, left = noise) and a native-dialog detail view. Two real scenarios are built and playable locally — TSMC 2330 (2023 AI rally) and Netflix (2022 Q1 subscriber shock) — but their news is not redistributable, so the GitHub Pages build (deployed on every push to `main`) ships only the toy fixture. Two modes: detective (default) and an opt-in predictive reveal mode.
 
-Specs and ticket breakdowns live under [`.scratch/`](.scratch/) — [`stock-game-mvp/`](.scratch/stock-game-mvp/) for the MVP, [`news-scoring-redesign/`](.scratch/news-scoring-redesign/) for the current pipeline rework.
+Specs and ticket breakdowns live under [`.scratch/`](.scratch/) — [`stock-game-mvp/`](.scratch/stock-game-mvp/) for the MVP, [`news-scoring-redesign/`](.scratch/news-scoring-redesign/) for the pipeline rework, [`real-news-rollout/`](.scratch/real-news-rollout/) for real-news collection, scoring comparison, and the swipe UI.
 
 ## Stack
 

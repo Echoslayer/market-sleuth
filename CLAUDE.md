@@ -33,10 +33,11 @@ Two independent halves joined by one contract: the scenario JSON schema. `pipeli
 ### Data flow
 
 1. `uv run pipeline fetch-prices` — yfinance → `pipeline/staging.db` (SQLite).
-2. `uv run pipeline import-raw-news` — curated raw news (no judgments) → `raw_news` table.
-3. `uv run pipeline score-news` — importance/is_key_event per news item → `news_scores` table. Multiple scoring methods coexist per item (PK includes `method`): `--method manual --scores-file ...`, or an LLM draft via `--raw-news-file ...` (Anthropic API, method recorded as the model name). Raw news vs. scores are deliberately separate tables so methods never overwrite each other — keep it that way.
-4. `uv run pipeline build-scenario --score-method ...` — merges prices + raw news + the chosen method's scores into `data/<scenario-id>.json`.
-5. Copy that JSON into `frontend/public/data/`; the frontend fetches `/data/<id>.json` at runtime (`scenarioDataProvider.ts`). Scenario is selected by `VITE_SCENARIO_ID` env var, defaulting to the checked-in toy fixture.
+2. `uv run pipeline import-raw-news` — curated raw news (no judgments) → `raw_news` table. Rows carry `url` (optional original link) and `source` (`manual`/`agent`/`gdelt`/`crawler`, set via `--source`, default `manual`). Real news is typically collected by a CLI agent (codex/agy) that emits a `raw-news.json` — there is deliberately **no** fetcher abstraction; every source just produces that one file shape.
+3. `uv run pipeline score-news` — importance/is_key_event per news item → `news_scores` table. Multiple scoring methods coexist per item (PK includes `method`): `--method manual --scores-file ...`; an LLM draft via `--raw-news-file ...` (in-process Anthropic API, needs `ANTHROPIC_API_KEY`); or — when no key is available — let a CLI agent (codex/agy) score the raw news into a JSON file and import it with `--method <label> --scores-file ...` (label it by the model, e.g. `llm-gpt-5`). Raw news vs. scores are deliberately separate tables so methods never overwrite each other — keep it that way.
+4. `uv run pipeline compare-scores --scenario-id <id> --methods a,b` — read-only per-item diff of two scoring methods (importance delta, is_key_event agreement, summary). Used to decide whether an LLM method can replace manual scoring. Comparison logic is a pure function in `scoring.py`; `cli.py` only formats output.
+5. `uv run pipeline build-scenario --score-method ...` — merges prices + raw news + the chosen method's scores into `data/<scenario-id>.json` (news items include `url` when present).
+6. Copy that JSON into `frontend/public/data/`; the frontend fetches `/data/<id>.json` at runtime (`scenarioDataProvider.ts`). Scenario is selected by `VITE_SCENARIO_ID` env var, defaulting to the checked-in toy fixture.
 
 ### Licensing constraint (important)
 
@@ -44,7 +45,9 @@ Real scenario data is **not redistributable**: `/data/`, `pipeline/scenarios/`, 
 
 ### Frontend game logic
 
-Pure logic lives in `frontend/src/game/` with vitest tests (`scoreRound.ts`, `revealCutoff.ts`); React components in `src/components/` stay thin. Two modes driven by data, not code: a scenario with `revealCutoffDate` plays in predictive mode (news/prices after the cutoff hidden until submit), without it in detective mode. `scoreRound` always receives the full scenario regardless of what is displayed.
+Pure logic lives in `frontend/src/game/` with vitest tests (`scoreRound.ts`, `revealCutoff.ts`, `swipeDeck.ts`); React components in `src/components/` stay thin. Two modes driven by data, not code: a scenario with `revealCutoffDate` plays in predictive mode (news/prices after the cutoff hidden until submit), without it in detective mode. `scoreRound` always receives the full scenario regardless of what is displayed.
+
+News input is a Tinder-style swipe deck (`NewsSwipeDeck`, native pointer events, no gesture library) over the pure reducer in `swipeDeck.ts` (right = key event, left = not, undo pops the history stack); tapping a card opens a native `<dialog>` with the full text and a "閱讀原文" link when the item has a `url`. The deck only produces `selectedNewsIds` — the `scoreRound` contract is unchanged. After submit, `NewsList` renders the same items with per-item verdicts.
 
 ### Pipeline module layout
 
