@@ -1,10 +1,10 @@
-# 05 — 前端滑卡 + 新聞彈窗
+# 04 — 前端滑卡 + 新聞彈窗
 
 **What to build:** 把「新聞互動」從列表勾選重做成 Tinder 式卡片堆疊：左右滑判定關鍵/非關鍵（右滑=關鍵）、可撤回、點卡片開原生 `<dialog>` 看全文與「閱讀原文」外連；桌面端同時給 ✓/✗ 按鈕（無障礙基本盤）。底層答案集合與 `scoreRound` 不變。
 
-**Blocked by:** 03（`Scenario` 需有 url 欄位；content 可空的 UI 行為）
+**Blocked by:** 02（`Scenario` 需有 url 欄位；content 可空的 UI 行為）
 
-**Status:** todo
+**Status:** ready-for-agent
 
 - [ ] 卡片堆疊 UI 顯示新聞，一張一張處理
 - [ ] 左右滑（原生 pointer events + CSS transform，不裝套件）：右滑=關鍵、左滑=非關鍵；過閾值飛出、未過彈回，不追求物理擬真

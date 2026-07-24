@@ -1,8 +1,8 @@
 # 07 — dresspage headless 爬蟲（候補 / backlog）
 
-**What to build:** 用 dresspage（headless 瀏覽器爬蟲）抓 agent/GDELT 只給連結、但需要原文內容的新聞頁面，輸出符合 raw-news.json 形狀（source=crawler，含原文 content）的檔。爬來的內容屬私有，僅本機／private repo 使用，公開匯出時由 `--public` 剝除（見 issue 03）。
+**What to build:** 用 dresspage（headless 瀏覽器爬蟲）抓 agent/GDELT 只給連結、但需要原文內容的新聞頁面，輸出符合 raw-news.json 形狀（source=crawler，含原文 content）的檔。爬來的內容屬私有，僅本機／private repo 使用，公開匯出時由 `--public` 剝除（見 issue 05）。
 
-**Blocked by:** 03（url/source 欄位）；最貴、最脆，僅在 agent（04）與 GDELT（06）都不足時才上
+**Blocked by:** 02（url/source 欄位）；最貴、最脆，僅在 agent（03）與 GDELT（06）都不足時才上
 
 **Status:** icebox
 

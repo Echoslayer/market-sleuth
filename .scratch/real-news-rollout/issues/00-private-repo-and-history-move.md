@@ -1,10 +1,10 @@
-# 02 — 建 private repo 與搬遷 history
+# 00 — 建 private repo 與搬遷 history
 
 **What to build:** 建立 private repo `market-sleuth-private` 作為未來私有文件（爬蟲來源筆記、含新聞原文的研究、評分分析報告）的家；把既有 `.scratch/history/`（review 報告）搬過去，主 repo 移除該目錄並更新 CLAUDE.md 的引用說明。不改寫 git 歷史。
 
 **Blocked by:**（無）
 
-**Status:** done（主 repo 變更待 commit）
+**Status:** done
 
 - [x] `gh` 建 private repo `Echoslayer/market-sleuth-private`（private，已 push README + history）
 - [x] `.scratch/history/2026-07-24-frontend-architecture-review.md` 移入 private repo `history/`，主 repo 刪除 `.scratch/history/`（已 stage 刪除）
