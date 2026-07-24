@@ -95,6 +95,31 @@ def test_build_scenario_defaults_timeline_summary_to_empty_list() -> None:
     assert scenario["timelineSummary"] == []
 
 
+def test_build_scenario_omits_reveal_cutoff_date_by_default() -> None:
+    scenario = build_scenario(
+        scenario_id="chip-rally",
+        stock_ticker="2330.TW",
+        stock_name="TSMC",
+        price_rows=PRICE_ROWS,
+        news_rows=NEWS_ROWS,
+    )
+
+    assert "revealCutoffDate" not in scenario
+
+
+def test_build_scenario_includes_reveal_cutoff_date_when_set() -> None:
+    scenario = build_scenario(
+        scenario_id="chip-rally",
+        stock_ticker="2330.TW",
+        stock_name="TSMC",
+        price_rows=PRICE_ROWS,
+        news_rows=NEWS_ROWS,
+        reveal_cutoff_date="2024-01-02",
+    )
+
+    assert scenario["revealCutoffDate"] == "2024-01-02"
+
+
 def test_build_scenario_shape_matches_frontend_contract() -> None:
     scenario = build_scenario(
         scenario_id="chip-rally",

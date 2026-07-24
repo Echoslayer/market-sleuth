@@ -13,6 +13,7 @@ def build_scenario(
     price_rows: list[dict[str, Any]],
     news_rows: list[dict[str, Any]],
     timeline_summary: list[str] | None = None,
+    reveal_cutoff_date: str | None = None,
 ) -> dict[str, Any]:
     if not price_rows:
         raise ValueError("price_rows must not be empty")
@@ -40,7 +41,7 @@ def build_scenario(
         for row in sorted(news_rows, key=lambda row: (row["date"], row["id"]))
     ]
 
-    return {
+    scenario: dict[str, Any] = {
         "id": scenario_id,
         "stockTicker": stock_ticker,
         "stockName": stock_name,
@@ -52,6 +53,9 @@ def build_scenario(
         "newsItems": news_items,
         "timelineSummary": list(timeline_summary) if timeline_summary else [],
     }
+    if reveal_cutoff_date:
+        scenario["revealCutoffDate"] = reveal_cutoff_date
+    return scenario
 
 
 def build_scenario_file(
@@ -65,6 +69,7 @@ def build_scenario_file(
     out_dir: Path,
     score_method: str,
     timeline_summary: list[str] | None = None,
+    reveal_cutoff_date: str | None = None,
 ) -> Path:
     from pipeline.prices import fetch_prices_to_sqlite, read_price_rows
     from pipeline.raw_news import read_raw_news
@@ -81,6 +86,7 @@ def build_scenario_file(
             read_scores(scenario_id, score_method, db_path),
         ),
         timeline_summary=timeline_summary,
+        reveal_cutoff_date=reveal_cutoff_date,
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{scenario_id}.json"

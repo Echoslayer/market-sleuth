@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
+import { visibleBeforeSubmit } from "../game/revealCutoff";
 import { type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
 import type { Scenario } from "../types/scenario";
 import { DirectionPicker } from "./DirectionPicker";
@@ -39,6 +40,13 @@ export function GameRound() {
     );
   }
 
+  // Before submit, a scenario with a revealCutoffDate only shows what a
+  // player at that point in time would have seen (predictive mode). With
+  // no cutoff, everything is visible from the start (detective mode).
+  // scoreRound always sees the full scenario — a hidden key event the
+  // player couldn't select just shows up as "missed" once revealed.
+  const displayScenario = score ? scenario : visibleBeforeSubmit(scenario);
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -61,9 +69,13 @@ export function GameRound() {
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold">Price Chart</h2>
-              <p className="text-sm text-slate-600">Visible market action for this round.</p>
+              <p className="text-sm text-slate-600">
+                {!score && scenario.revealCutoffDate
+                  ? `Showing action through ${scenario.revealCutoffDate} — the rest unlocks after you submit.`
+                  : "Visible market action for this round."}
+              </p>
             </div>
-            <PriceChart priceSeries={scenario.priceSeries} />
+            <PriceChart priceSeries={displayScenario.priceSeries} />
           </div>
 
           <aside className="space-y-4">
@@ -85,7 +97,7 @@ export function GameRound() {
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">News</h2>
-            <NewsList newsItems={scenario.newsItems} selectedNewsIds={selectedNewsIds} onToggle={toggleNews} score={score ?? undefined} />
+            <NewsList newsItems={displayScenario.newsItems} selectedNewsIds={selectedNewsIds} onToggle={toggleNews} score={score ?? undefined} />
           </div>
 
           {score ? (

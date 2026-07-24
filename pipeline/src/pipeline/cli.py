@@ -52,6 +52,7 @@ def main() -> None:
     build.add_argument("--out-dir", type=Path, default=DEFAULT_DATA_DIR)
     build.add_argument("--timeline-summary-file", type=Path, default=None)
     build.add_argument("--score-method", required=True)
+    build.add_argument("--reveal-cutoff-date", default=None)
     build.set_defaults(func=_build_scenario_file)
 
     args = parser.parse_args()
@@ -89,6 +90,7 @@ def _build_scenario_file(args: argparse.Namespace) -> None:
         out_dir=args.out_dir,
         score_method=args.score_method,
         timeline_summary=_read_json_list(args.timeline_summary_file) if args.timeline_summary_file else [],
+        reveal_cutoff_date=args.reveal_cutoff_date,
     )
     print(out_path)
 

@@ -7,6 +7,12 @@ export type Scenario = {
   newsItems: NewsItem[];
   /** Ordered curator summary of the event timeline. */
   timelineSummary: string[];
+  /**
+   * If set, pre-submit play hides price/news dated after this cutoff
+   * (predictive mode). If absent, everything is visible from the start
+   * (detective mode) — the two game modes share this one scenario shape.
+   */
+  revealCutoffDate?: string;
 };
 
 export type DateRange = {
