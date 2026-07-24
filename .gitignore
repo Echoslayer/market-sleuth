@@ -18,6 +18,8 @@ pipeline/*.db
 pipeline/__pycache__/
 pipeline/**/__pycache__/
 *.pyc
+# raw curated scenario inputs (real news content) — same copyright concern as /data
+pipeline/scenarios/
 
 # OS
 .DS_Store

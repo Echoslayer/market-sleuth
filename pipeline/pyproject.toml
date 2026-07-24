@@ -5,12 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic",
     "yfinance",
 ]
 
 [project.scripts]
 pipeline = "pipeline:main"
 pipeline-build-scenario = "pipeline.cli:main"
+pipeline-draft-news = "pipeline.cli:draft_news_main"
 pipeline-import-news = "pipeline.cli:import_news_main"
 
 [dependency-groups]

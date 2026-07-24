@@ -76,6 +76,10 @@ def import_news_json(scenario_id: str, news_path: Path, db_path: Path) -> None:
     if not isinstance(items, list):
         raise ValueError("news JSON must be a list of objects")
 
+    write_news_rows(scenario_id, items, db_path)
+
+
+def write_news_rows(scenario_id: str, items: list[dict[str, Any]], db_path: Path) -> None:
     with connect(db_path) as conn:
         conn.executemany(
             """
@@ -102,26 +106,17 @@ def import_news_csv(scenario_id: str, news_path: Path, db_path: Path) -> None:
     with news_path.open(newline="") as file:
         items = list(csv.DictReader(file))
 
-    with connect(db_path) as conn:
-        conn.executemany(
-            """
-            INSERT OR REPLACE INTO news
-                (scenario_id, id, date, headline, content, importance, is_key_event)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                (
-                    scenario_id,
-                    str(item["id"]),
-                    str(item["date"]),
-                    str(item["headline"]),
-                    str(item["content"]),
-                    int(item["importance"]),
-                    _csv_bool(item["is_key_event"]),
-                )
-                for item in items
-            ],
-        )
+    write_news_rows(
+        scenario_id,
+        [
+            {
+                **item,
+                "is_key_event": _csv_bool(item["is_key_event"]),
+            }
+            for item in items
+        ],
+        db_path,
+    )
 
 
 def import_news(scenario_id: str, news_path: Path, db_path: Path) -> None:

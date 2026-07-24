@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
+from pipeline.news_draft import draft_news
 from pipeline.scenario import build_scenario
 from pipeline.staging import (
     fetch_prices_to_sqlite,
@@ -56,3 +58,17 @@ def import_news_main() -> None:
     args = parser.parse_args()
 
     import_news(args.scenario_id, args.news_file, args.db)
+
+
+def draft_news_main() -> None:
+    parser = argparse.ArgumentParser(description="Draft scenario news metadata with Anthropic.")
+    parser.add_argument("--scenario-id", required=True)
+    parser.add_argument("--raw-news-file", type=Path, required=True)
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    args = parser.parse_args()
+
+    try:
+        draft_news(args.scenario_id, args.raw_news_file, args.db)
+    except (RuntimeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
