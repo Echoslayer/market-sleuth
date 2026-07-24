@@ -13,6 +13,8 @@ frontend/dist/
 pipeline/.venv/
 pipeline/.uv-cache/
 .uv-cache/
+pipeline/*.sqlite
+pipeline/*.db
 pipeline/__pycache__/
 pipeline/**/__pycache__/
 *.pyc

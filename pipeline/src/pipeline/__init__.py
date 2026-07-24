@@ -1,2 +1,9 @@
+from pipeline.scenario import build_scenario
+
+__all__ = ["build_scenario", "main"]
+
+
 def main() -> None:
-    print("market-sleuth pipeline scaffold")
+    from pipeline.cli import main as cli_main
+
+    cli_main()
