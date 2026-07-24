@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
 import { visibleBeforeSubmit } from "../game/revealCutoff";
 import { type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
@@ -6,12 +6,14 @@ import { cn } from "../lib/cn";
 import type { Scenario } from "../types/scenario";
 import { DirectionPicker } from "./DirectionPicker";
 import { NewsList } from "./NewsList";
+import { NewsSwipeDeck } from "./NewsSwipeDeck";
 import { PriceChart } from "./PriceChart";
 
 export function GameRound() {
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [direction, setDirection] = useState<Direction>("hold");
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
+  const [newsDeckComplete, setNewsDeckComplete] = useState(false);
   const [score, setScore] = useState<RoundScore | null>(null);
 
   useEffect(() => {
@@ -27,6 +29,11 @@ export function GameRound() {
       current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id],
     );
   };
+
+  const updateNewsSelection = useCallback((ids: string[], complete: boolean) => {
+    setSelectedNewsIds(ids);
+    setNewsDeckComplete(complete);
+  }, []);
 
   const submit = () => {
     if (!scenario) return;
@@ -46,7 +53,7 @@ export function GameRound() {
   // no cutoff, everything is visible from the start (detective mode).
   // scoreRound always sees the full scenario — a hidden key event the
   // player couldn't select just shows up as "missed" once revealed.
-  const displayScenario = score ? scenario : visibleBeforeSubmit(scenario);
+  const displayScenario = useMemo(() => (score ? scenario : visibleBeforeSubmit(scenario)), [scenario, score]);
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
@@ -87,7 +94,8 @@ export function GameRound() {
               <button
                 type="button"
                 onClick={submit}
-                className="h-11 w-full rounded bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700"
+                disabled={!newsDeckComplete}
+                className="h-11 w-full rounded bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit Round
               </button>
@@ -98,7 +106,16 @@ export function GameRound() {
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">News</h2>
-            <NewsList newsItems={displayScenario.newsItems} selectedNewsIds={selectedNewsIds} onToggle={toggleNews} score={score ?? undefined} />
+            {score ? (
+              <NewsList
+                newsItems={displayScenario.newsItems}
+                selectedNewsIds={selectedNewsIds}
+                onToggle={toggleNews}
+                score={score}
+              />
+            ) : (
+              <NewsSwipeDeck newsItems={displayScenario.newsItems} onChange={updateNewsSelection} />
+            )}
           </div>
 
           {score ? (
