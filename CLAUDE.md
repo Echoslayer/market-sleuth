@@ -53,5 +53,5 @@ Deep-modules split (see `.scratch/news-scoring-redesign/spec.md`): `cli.py` is w
 ## Conventions
 
 - Prefer few deep modules over many shallow files; don't add abstractions ahead of need (spec explicitly removed speculative CSV paths).
-- Architecture/code review write-ups are written primarily in Traditional Chinese and saved to `.scratch/history/` as `YYYY-MM-DD-<topic>.md`; specs mix Traditional Chinese prose with English identifiers.
+- Architecture/code review write-ups are written primarily in Traditional Chinese, named `YYYY-MM-DD-<topic>.md`, and saved to the private companion repo `market-sleuth-private` (`history/`), **not** the public repo — they may reference non-redistributable material. Specs and tickets stay public in `.scratch/`. Specs mix Traditional Chinese prose with English identifiers.
 - Deploy: push to `main` builds `frontend/` and publishes to GitHub Pages (`.github/workflows/deploy.yml`) at https://echoslayer.github.io/market-sleuth/.
