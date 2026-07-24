@@ -30,6 +30,7 @@ def main() -> None:
     raw = subparsers.add_parser("import-raw-news", help="Import raw scenario news into SQLite.")
     raw.add_argument("--scenario-id", required=True)
     raw.add_argument("--raw-news-file", type=Path, required=True)
+    raw.add_argument("--source", default="manual")
     raw.add_argument("--db", type=Path, default=DEFAULT_DB)
     raw.set_defaults(func=_import_raw_news)
 
@@ -68,7 +69,7 @@ def _fetch_prices(args: argparse.Namespace) -> None:
 
 
 def _import_raw_news(args: argparse.Namespace) -> None:
-    import_raw_news(args.scenario_id, _read_json_list(args.raw_news_file), args.db)
+    import_raw_news(args.scenario_id, _read_json_list(args.raw_news_file), args.db, source=args.source)
 
 
 def _score_news(args: argparse.Namespace) -> None:

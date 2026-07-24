@@ -35,6 +35,7 @@ export type NewsItem = {
   id: string;
   date: string;
   headline: string;
+  url?: string;
   content: string;
   /** Curated importance score from 1 to 5. */
   importance: 1 | 2 | 3 | 4 | 5;

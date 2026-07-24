@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class RawNewsItem(TypedDict):
@@ -8,6 +8,8 @@ class RawNewsItem(TypedDict):
     date: str
     headline: str
     content: str
+    url: NotRequired[str]
+    source: str
 
 
 class NewsScoreItem(TypedDict):

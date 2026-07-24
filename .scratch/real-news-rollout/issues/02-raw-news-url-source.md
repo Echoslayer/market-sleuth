@@ -4,14 +4,14 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `raw_news` schema 加 `url TEXT`（可空）、`source TEXT NOT NULL`；`import-raw-news` 接收並寫入 source（既有 manual 匯入 source=manual）
-- [ ] `types.py` 的新聞列型別加 url/source，維持「形狀只定義一次」
-- [ ] `build-scenario` 把 url 帶進輸出 JSON（完整輸出，不剝任何內容）
-- [ ] `resolve_news` / `build_scenario` 既有測試涵蓋新欄位（url/source 有值與缺值）
-- [ ] 前端 `frontend/src/types/scenario.ts` 的新聞項加可選 `url`；content 可為空字串（供 04 的 UI 顯示「請點連結閱讀原文」）
-- [ ] 既有 TSMC 關卡重跑匯出仍可玩（url/source 缺值時行為不變）
+- [x] `raw_news` schema 加 `url TEXT`（可空）、`source TEXT NOT NULL`；`import-raw-news` 接收並寫入 source（既有 manual 匯入 source=manual）
+- [x] `types.py` 的新聞列型別加 url/source，維持「形狀只定義一次」
+- [x] `build-scenario` 把 url 帶進輸出 JSON（完整輸出，不剝任何內容）
+- [x] `resolve_news` / `build_scenario` 既有測試涵蓋新欄位（url/source 有值與缺值）
+- [x] 前端 `frontend/src/types/scenario.ts` 的新聞項加可選 `url`；content 可為空字串（供 04 的 UI 顯示「請點連結閱讀原文」）
+- [x] 既有 TSMC 關卡重跑匯出仍可玩（url/source 缺值時行為不變）
 
 ## Comments
 

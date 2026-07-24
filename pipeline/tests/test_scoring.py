@@ -8,7 +8,9 @@ RAW_ROWS = [
         "id": "n1",
         "date": "2024-01-02",
         "headline": "Factory output rises",
+        "url": "https://example.com/factory-output-rises",
         "content": "Output increased during the quarter.",
+        "source": "agent",
     },
     {
         "id": "n2",
@@ -16,6 +18,11 @@ RAW_ROWS = [
         "headline": "Analyst note",
         "content": "Analysts updated estimates.",
     },
+]
+
+RESOLVED_RAW_ROWS = [
+    RAW_ROWS[0],
+    {**RAW_ROWS[1], "source": "manual"},
 ]
 
 
@@ -57,8 +64,8 @@ def test_resolve_news_merges_raw_rows_with_scores() -> None:
     )
 
     assert rows == [
-        {**RAW_ROWS[0], "importance": 4, "is_key_event": True},
-        {**RAW_ROWS[1], "importance": 2, "is_key_event": False},
+        {**RESOLVED_RAW_ROWS[0], "importance": 4, "is_key_event": True},
+        {**RESOLVED_RAW_ROWS[1], "importance": 2, "is_key_event": False},
     ]
 
 
@@ -67,17 +74,17 @@ def test_resolve_news_uses_rows_already_filtered_to_requested_method() -> None:
     llm_scores = [{"news_id": "n1", "importance": 1, "is_key_event": False}]
 
     assert resolve_news(RAW_ROWS, manual_scores) == [
-        {**RAW_ROWS[0], "importance": 4, "is_key_event": True}
+        {**RESOLVED_RAW_ROWS[0], "importance": 4, "is_key_event": True}
     ]
     assert resolve_news(RAW_ROWS, llm_scores) == [
-        {**RAW_ROWS[0], "importance": 1, "is_key_event": False}
+        {**RESOLVED_RAW_ROWS[0], "importance": 1, "is_key_event": False}
     ]
 
 
 def test_resolve_news_excludes_raw_rows_without_scores() -> None:
     rows = resolve_news(RAW_ROWS, [{"news_id": "n1", "importance": 4, "is_key_event": True}])
 
-    assert rows == [{**RAW_ROWS[0], "importance": 4, "is_key_event": True}]
+    assert rows == [{**RESOLVED_RAW_ROWS[0], "importance": 4, "is_key_event": True}]
 
 
 def test_resolve_news_ignores_scores_for_missing_raw_rows() -> None:
@@ -89,4 +96,4 @@ def test_resolve_news_ignores_scores_for_missing_raw_rows() -> None:
         ],
     )
 
-    assert rows == [{**RAW_ROWS[0], "importance": 4, "is_key_event": True}]
+    assert rows == [{**RESOLVED_RAW_ROWS[0], "importance": 4, "is_key_event": True}]

@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS raw_news (
     date TEXT NOT NULL,
     headline TEXT NOT NULL,
     content TEXT NOT NULL,
+    url TEXT,
+    source TEXT NOT NULL,
     PRIMARY KEY (scenario_id, id)
 );
 
@@ -42,4 +44,13 @@ def connect(db_path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _migrate_raw_news(conn)
     return conn
+
+
+def _migrate_raw_news(conn: sqlite3.Connection) -> None:
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(raw_news)").fetchall()}
+    if "url" not in columns:
+        conn.execute("ALTER TABLE raw_news ADD COLUMN url TEXT")
+    if "source" not in columns:
+        conn.execute("ALTER TABLE raw_news ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'")

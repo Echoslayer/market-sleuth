@@ -11,6 +11,7 @@ NEWS_ROWS = [
         "id": "n1",
         "date": "2024-01-02",
         "headline": "Factory output rises",
+        "url": "https://example.com/factory-output-rises",
         "content": "Output increased during the quarter.",
         "importance": 4,
         "is_key_event": True,
@@ -52,6 +53,7 @@ def test_build_scenario_passes_through_news_fields() -> None:
             "id": "n1",
             "date": "2024-01-02",
             "headline": "Factory output rises",
+            "url": "https://example.com/factory-output-rises",
             "content": "Output increased during the quarter.",
             "importance": 4,
             "isKeyEvent": True,
@@ -148,7 +150,15 @@ def test_build_scenario_shape_matches_frontend_contract() -> None:
     assert all(isinstance(row["close"], float) for row in scenario["priceSeries"])
     assert all(isinstance(row["volume"], int) for row in scenario["priceSeries"])
     assert all(
-        set(row) == {"id", "date", "headline", "content", "importance", "isKeyEvent"}
+        {"id", "date", "headline", "content", "importance", "isKeyEvent"} <= set(row) <= {
+            "id",
+            "date",
+            "headline",
+            "url",
+            "content",
+            "importance",
+            "isKeyEvent",
+        }
         for row in scenario["newsItems"]
     )
     assert isinstance(scenario["timelineSummary"], list)

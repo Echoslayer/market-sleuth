@@ -29,8 +29,9 @@ def build_scenario(
         }
         for row in sorted(price_rows, key=lambda row: row["date"])
     ]
-    news_items = [
-        {
+    news_items = []
+    for row in sorted(news_rows, key=lambda row: (row["date"], row["id"])):
+        item = {
             "id": str(row["id"]),
             "date": str(row["date"]),
             "headline": str(row["headline"]),
@@ -38,8 +39,9 @@ def build_scenario(
             "importance": int(row["importance"]),
             "isKeyEvent": bool(row["is_key_event"]),
         }
-        for row in sorted(news_rows, key=lambda row: (row["date"], row["id"]))
-    ]
+        if row.get("url") is not None:
+            item["url"] = str(row["url"])
+        news_items.append(item)
 
     scenario: dict[str, Any] = {
         "id": scenario_id,
