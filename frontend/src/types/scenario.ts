@@ -1,3 +1,5 @@
+// Contract mirrored in pipeline/tests/test_scenario.py — update that key-set
+// assertion whenever a field here is added, removed, or renamed.
 export type Scenario = {
   id: string;
   stockTicker: string;

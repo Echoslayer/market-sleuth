@@ -8,6 +8,9 @@ export type ScenarioDataProvider = {
 export const localJsonScenarioDataProvider: ScenarioDataProvider = {
   getScenario: async (id) => {
     const response = await fetch(`/data/${id}.json`);
+    if (!response.ok) {
+      throw new Error(`Failed to load scenario "${id}": ${response.status}`);
+    }
     return (await response.json()) as Scenario;
   },
 };

@@ -120,6 +120,8 @@ def test_build_scenario_includes_reveal_cutoff_date_when_set() -> None:
     assert scenario["revealCutoffDate"] == "2024-01-02"
 
 
+# Mirror of the frontend Scenario contract in frontend/src/types/scenario.ts —
+# the JSON file is the only seam between the two, so keep these key sets in sync.
 def test_build_scenario_shape_matches_frontend_contract() -> None:
     scenario = build_scenario(
         scenario_id="chip-rally",
@@ -150,3 +152,25 @@ def test_build_scenario_shape_matches_frontend_contract() -> None:
         for row in scenario["newsItems"]
     )
     assert isinstance(scenario["timelineSummary"], list)
+
+    # Optional field is part of the same contract — build with a cutoff so the
+    # mirror covers it too, otherwise adding/renaming it here won't go red.
+    with_cutoff = build_scenario(
+        scenario_id="chip-rally",
+        stock_ticker="2330.TW",
+        stock_name="TSMC",
+        price_rows=PRICE_ROWS,
+        news_rows=NEWS_ROWS,
+        reveal_cutoff_date="2024-01-02",
+    )
+    assert set(with_cutoff) == {
+        "id",
+        "stockTicker",
+        "stockName",
+        "dateRange",
+        "priceSeries",
+        "newsItems",
+        "timelineSummary",
+        "revealCutoffDate",
+    }
+    assert isinstance(with_cutoff["revealCutoffDate"], str)

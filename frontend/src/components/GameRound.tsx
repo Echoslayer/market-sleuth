@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
 import { visibleBeforeSubmit } from "../game/revealCutoff";
 import { type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
+import { cn } from "../lib/cn";
 import type { Scenario } from "../types/scenario";
 import { DirectionPicker } from "./DirectionPicker";
 import { NewsList } from "./NewsList";
@@ -122,8 +123,8 @@ function DirectionResult({ direction, score }: { direction: Direction; score: Ro
   const correct = score.directionScore === 1;
 
   return (
-    <div className={`rounded border bg-white p-4 text-sm ${correct ? "border-teal-300" : "border-red-300"}`}>
-      <p className={correct ? "font-semibold text-teal-700" : "font-semibold text-red-700"}>
+    <div className={cn("rounded border bg-white p-4 text-sm", correct ? "border-teal-300" : "border-red-300")}>
+      <p className={cn("font-semibold", correct ? "text-teal-700" : "text-red-700")}>
         {correct ? "Direction correct" : "Direction incorrect"}
       </p>
       <p className="mt-1 text-slate-700">

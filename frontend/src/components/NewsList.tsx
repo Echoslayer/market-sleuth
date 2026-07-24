@@ -1,4 +1,5 @@
 import type { RoundScore } from "../game/scoreRound";
+import { cn } from "../lib/cn";
 import type { NewsItem } from "../types/scenario";
 
 type NewsListProps = {
@@ -32,7 +33,7 @@ export function NewsList({ newsItems, selectedNewsIds, onToggle, score }: NewsLi
                 <span className="text-xs text-slate-500">{item.date}</span>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-700">{item.content}</p>
-              {score ? <NewsResult item={item} selected={selected.has(item.id)} /> : null}
+              {score ? <NewsResult item={item} verdict={verdictFor(item, score)} /> : null}
             </div>
           </div>
         </label>
@@ -41,19 +42,25 @@ export function NewsList({ newsItems, selectedNewsIds, onToggle, score }: NewsLi
   );
 }
 
-function NewsResult({ item, selected }: { item: NewsItem; selected: boolean }) {
-  const verdict = item.isKeyEvent
-    ? selected
-      ? "Identified key event"
-      : "Missed key event"
-    : selected
-      ? "False positive"
-      : "Noise";
+// Verdict classification is scoreRound's rule, read from score.breakdown —
+// never re-derived here. Noise (correct rejection) is the complement of the
+// three breakdown sets, which by construction don't list it.
+function verdictFor(item: NewsItem, score: RoundScore): { label: string; correct: boolean } {
+  const { breakdown } = score;
+  if (breakdown.selectedKeyEvents.some((i) => i.id === item.id))
+    return { label: "Identified key event", correct: true };
+  if (breakdown.missedKeyEvents.some((i) => i.id === item.id))
+    return { label: "Missed key event", correct: false };
+  if (breakdown.falsePositives.some((i) => i.id === item.id))
+    return { label: "False positive", correct: false };
+  return { label: "Noise", correct: true };
+}
 
+function NewsResult({ item, verdict }: { item: NewsItem; verdict: { label: string; correct: boolean } }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
       <span className="font-medium text-amber-600">{"★".repeat(item.importance)}</span>
-      <span className={item.isKeyEvent === selected ? "text-teal-700" : "text-red-700"}>{verdict}</span>
+      <span className={cn(verdict.correct ? "text-teal-700" : "text-red-700")}>{verdict.label}</span>
     </div>
   );
 }

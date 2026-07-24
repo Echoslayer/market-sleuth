@@ -1,3 +1,4 @@
+import { cn } from "../lib/cn";
 import type { Direction } from "../game/scoreRound";
 
 type DirectionPickerProps = {
@@ -21,9 +22,10 @@ export function DirectionPicker({ value, onChange, disabled = false }: Direction
           type="button"
           disabled={disabled}
           onClick={() => onChange(option.value)}
-          className={`h-10 text-sm font-medium ${
-            value === option.value ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
-          }`}
+          className={cn(
+            "h-10 text-sm font-medium",
+            value === option.value ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100",
+          )}
         >
           {option.label}
         </button>
