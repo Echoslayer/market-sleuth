@@ -13,7 +13,11 @@ export function GameRound() {
   const [score, setScore] = useState<RoundScore | null>(null);
 
   useEffect(() => {
-    localJsonScenarioDataProvider.getScenario("tsmc-2023-ai-rally").then(setScenario);
+    // ponytail: real scenario data is gitignored (licensing), so public
+    // deploys fall back to the checked-in toy fixture; override locally via
+    // frontend/.env.local (VITE_SCENARIO_ID=tsmc-2023-ai-rally).
+    const scenarioId = import.meta.env.VITE_SCENARIO_ID ?? "toy-chipmaker-rally";
+    localJsonScenarioDataProvider.getScenario(scenarioId).then(setScenario);
   }, []);
 
   const toggleNews = (id: string) => {
