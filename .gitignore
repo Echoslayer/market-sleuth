@@ -1,5 +1,9 @@
 # scenario data (not redistributable — see spec)
 /data/
+# real scenario JSON served to the frontend must never be committed either;
+# only the checked-in toy/dev fixture is allowlisted below
+frontend/public/data/*
+!frontend/public/data/toy-chipmaker-rally.json
 
 # frontend
 frontend/node_modules/
@@ -15,3 +19,6 @@ pipeline/**/__pycache__/
 
 # OS
 .DS_Store
+
+# local agent/session state
+.claude/

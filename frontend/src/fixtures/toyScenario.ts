@@ -18,6 +18,7 @@ export const toyScenario = {
   ],
   newsItems: [
     {
+      id: "routine-board-meeting",
       date: "2024-01-02",
       headline: "Fictional Semiconductor announces routine board meeting",
       content: "The company scheduled its regular quarterly board meeting for later this month.",
@@ -25,6 +26,7 @@ export const toyScenario = {
       isKeyEvent: false,
     },
     {
+      id: "cloud-customer-order",
       date: "2024-01-03",
       headline: "Major cloud customer expands accelerator order",
       content: "A large cloud operator increased its purchase plan for the company's newest accelerator package.",
@@ -32,6 +34,7 @@ export const toyScenario = {
       isKeyEvent: true,
     },
     {
+      id: "shipment-estimates-raised",
       date: "2024-01-05",
       headline: "Analysts raise shipment estimates after supply checks",
       content: "Several analysts lifted near-term shipment forecasts after finding tighter advanced packaging capacity.",
@@ -39,6 +42,7 @@ export const toyScenario = {
       isKeyEvent: true,
     },
     {
+      id: "utility-maintenance",
       date: "2024-01-08",
       headline: "Local utility reports planned maintenance near one office",
       content: "A scheduled power maintenance notice affected an administrative office, not production facilities.",

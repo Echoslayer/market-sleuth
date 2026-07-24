@@ -24,6 +24,7 @@ export type PricePoint = {
 };
 
 export type NewsItem = {
+  id: string;
   date: string;
   headline: string;
   content: string;

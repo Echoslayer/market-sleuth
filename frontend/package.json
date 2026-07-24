@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "lightweight-charts": "^5.0.9",
     "tailwindcss": "^4.3.3",
     "vite": "^7.3.0",
     "typescript": "~5.9.3",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "vitest": "^4.0.15"
   }
 }
