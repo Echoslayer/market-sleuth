@@ -10,10 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pipeline = "pipeline:main"
-pipeline-build-scenario = "pipeline.cli:main"
-pipeline-draft-news = "pipeline.cli:draft_news_main"
-pipeline-import-news = "pipeline.cli:import_news_main"
+pipeline = "pipeline.cli:main"
 
 [dependency-groups]
 dev = [

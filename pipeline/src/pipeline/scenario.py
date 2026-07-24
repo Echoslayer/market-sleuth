@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 
@@ -50,3 +52,37 @@ def build_scenario(
         "newsItems": news_items,
         "timelineSummary": list(timeline_summary) if timeline_summary else [],
     }
+
+
+def build_scenario_file(
+    *,
+    scenario_id: str,
+    ticker: str,
+    stock_name: str,
+    start: str,
+    end: str,
+    db_path: Path,
+    out_dir: Path,
+    score_method: str,
+    timeline_summary: list[str] | None = None,
+) -> Path:
+    from pipeline.prices import fetch_prices_to_sqlite, read_price_rows
+    from pipeline.raw_news import read_raw_news
+    from pipeline.scoring import read_scores, resolve_news
+
+    fetch_prices_to_sqlite(ticker, start, end, db_path)
+    scenario = build_scenario(
+        scenario_id=scenario_id,
+        stock_ticker=ticker,
+        stock_name=stock_name,
+        price_rows=read_price_rows(ticker, db_path),
+        news_rows=resolve_news(
+            read_raw_news(scenario_id, db_path),
+            read_scores(scenario_id, score_method, db_path),
+        ),
+        timeline_summary=timeline_summary,
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{scenario_id}.json"
+    out_path.write_text(json.dumps(scenario, indent=2) + "\n")
+    return out_path
