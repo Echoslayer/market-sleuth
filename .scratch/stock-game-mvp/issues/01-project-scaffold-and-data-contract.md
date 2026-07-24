@@ -4,10 +4,14 @@
 
 **Blocked by:** None — 可立即開始
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `frontend/` 可用 `bun install && bun run dev` 啟動，畫面顯示任意佔位內容
-- [ ] `pipeline/` 可用 `uv run <script>` 執行一支印出訊息的空腳本
-- [ ] `data/` 存在且被 `.gitignore` 排除
-- [ ] Scenario JSON 的 TypeScript type 定義完成，欄位涵蓋：`id`、`stockTicker`、`stockName`、`dateRange`、`priceSeries`（OHLCV）、`newsItems`（含 `date`/`headline`/`content`/`importance`/`isKeyEvent`）、`timelineSummary`
-- [ ] 一份符合上述 schema 的手寫 fixture scenario 檔案存在於 repo 中（非 `/data`），內容為假資料
+- [x] `frontend/` 可用 `bun install && bun run dev` 啟動，畫面顯示任意佔位內容（以 `bun run build` 驗證成功建置）
+- [x] `pipeline/` 可用 `uv run <script>` 執行一支印出訊息的空腳本
+- [x] `data/` 存在且被 `.gitignore` 排除
+- [x] Scenario JSON 的 TypeScript type 定義完成，欄位涵蓋：`id`、`stockTicker`、`stockName`、`dateRange`、`priceSeries`（OHLCV）、`newsItems`（含 `date`/`headline`/`content`/`importance`/`isKeyEvent`）、`timelineSummary`
+- [x] 一份符合上述 schema 的手寫 fixture scenario 檔案存在於 repo 中（非 `/data`），內容為假資料
+
+## Comments
+
+實作由 `codex exec`（sandbox: workspace-write）非互動完成，Claude Code 驗證（`bun install`、`bun run build`、`uv run pipeline`）並修正/補齊 commit。`bun` 原本未安裝於本機，已透過 `brew install bun` 補裝。
