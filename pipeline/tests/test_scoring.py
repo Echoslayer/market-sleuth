@@ -1,6 +1,6 @@
 import pytest
 
-from pipeline.scoring import parse_llm_score_response, resolve_news
+from pipeline.scoring import compare_scores, parse_llm_score_response, resolve_news
 
 
 RAW_ROWS = [
@@ -52,6 +52,75 @@ def test_parse_llm_score_response_validates_rows() -> None:
 def test_parse_llm_score_response_rejects_malformed_entries(response: str, message: str) -> None:
     with pytest.raises(ValueError, match=message):
         parse_llm_score_response(response)
+
+
+def test_compare_scores_identical_scores_have_zero_diff_and_full_agreement() -> None:
+    comparison = compare_scores(
+        [{"news_id": "n1", "importance": 4, "is_key_event": True}],
+        [{"news_id": "n1", "importance": 4, "is_key_event": True}],
+    )
+
+    assert comparison == {
+        "rows": [
+            {
+                "news_id": "n1",
+                "importance_a": 4,
+                "importance_b": 4,
+                "importance_diff": 0,
+                "is_key_event_a": True,
+                "is_key_event_b": True,
+                "key_event_agree": True,
+            }
+        ],
+        "summary": {
+            "compared_count": 1,
+            "mean_abs_importance_diff": 0.0,
+            "key_event_disagreement_count": 0,
+            "key_event_disagreement_news_ids": [],
+            "only_in_a": 0,
+            "only_in_b": 0,
+        },
+    }
+
+
+def test_compare_scores_reports_differing_importance() -> None:
+    comparison = compare_scores(
+        [{"news_id": "n1", "importance": 5, "is_key_event": True}],
+        [{"news_id": "n1", "importance": 2, "is_key_event": True}],
+    )
+
+    assert comparison["rows"][0]["importance_diff"] == 3
+    assert comparison["summary"]["mean_abs_importance_diff"] == 3.0
+    assert comparison["summary"]["key_event_disagreement_count"] == 0
+
+
+def test_compare_scores_reports_disagreeing_key_event() -> None:
+    comparison = compare_scores(
+        [{"news_id": "n1", "importance": 4, "is_key_event": True}],
+        [{"news_id": "n1", "importance": 4, "is_key_event": False}],
+    )
+
+    assert comparison["rows"][0]["key_event_agree"] is False
+    assert comparison["summary"]["key_event_disagreement_count"] == 1
+    assert comparison["summary"]["key_event_disagreement_news_ids"] == ["n1"]
+
+
+def test_compare_scores_excludes_unpaired_news_ids_but_counts_them() -> None:
+    comparison = compare_scores(
+        [
+            {"news_id": "n1", "importance": 4, "is_key_event": True},
+            {"news_id": "only-a", "importance": 3, "is_key_event": False},
+        ],
+        [
+            {"news_id": "n1", "importance": 5, "is_key_event": True},
+            {"news_id": "only-b", "importance": 2, "is_key_event": False},
+        ],
+    )
+
+    assert [row["news_id"] for row in comparison["rows"]] == ["n1"]
+    assert comparison["summary"]["compared_count"] == 1
+    assert comparison["summary"]["only_in_a"] == 1
+    assert comparison["summary"]["only_in_b"] == 1
 
 
 def test_resolve_news_merges_raw_rows_with_scores() -> None:

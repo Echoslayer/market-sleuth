@@ -7,7 +7,7 @@ from typing import Any
 
 from pipeline.db import connect
 from pipeline.raw_news import parse_raw_item
-from pipeline.types import NewsScoreItem, RawNewsItem, ResolvedNewsItem
+from pipeline.types import NewsScoreItem, RawNewsItem, ResolvedNewsItem, ScoreComparison
 
 
 DEFAULT_MODEL = "claude-sonnet-5"
@@ -105,6 +105,51 @@ def read_scores(scenario_id: str, method: str, db_path: Path) -> list[NewsScoreI
     ]
 
 
+def compare_scores(rows_a: list[NewsScoreItem], rows_b: list[NewsScoreItem]) -> ScoreComparison:
+    scores_a = {row["news_id"]: row for row in rows_a}
+    scores_b = {row["news_id"]: row for row in rows_b}
+    shared_news_ids = sorted(scores_a.keys() & scores_b.keys())
+
+    rows = []
+    abs_importance_diff_total = 0
+    key_event_disagreement_news_ids: list[str] = []
+    for news_id in shared_news_ids:
+        score_a = scores_a[news_id]
+        score_b = scores_b[news_id]
+        importance_diff = score_a["importance"] - score_b["importance"]
+        key_event_agree = score_a["is_key_event"] == score_b["is_key_event"]
+        abs_importance_diff_total += abs(importance_diff)
+        if not key_event_agree:
+            key_event_disagreement_news_ids.append(news_id)
+        rows.append(
+            {
+                "news_id": news_id,
+                "importance_a": score_a["importance"],
+                "importance_b": score_b["importance"],
+                "importance_diff": importance_diff,
+                "is_key_event_a": score_a["is_key_event"],
+                "is_key_event_b": score_b["is_key_event"],
+                "key_event_agree": key_event_agree,
+            }
+        )
+
+    compared_count = len(rows)
+    mean_abs_importance_diff = (
+        abs_importance_diff_total / compared_count if compared_count else 0.0
+    )
+    return {
+        "rows": rows,
+        "summary": {
+            "compared_count": compared_count,
+            "mean_abs_importance_diff": mean_abs_importance_diff,
+            "key_event_disagreement_count": len(key_event_disagreement_news_ids),
+            "key_event_disagreement_news_ids": key_event_disagreement_news_ids,
+            "only_in_a": len(scores_a.keys() - scores_b.keys()),
+            "only_in_b": len(scores_b.keys() - scores_a.keys()),
+        },
+    }
+
+
 def resolve_news(
     raw_rows: list[dict[str, Any]],
     score_rows: list[dict[str, Any]],
@@ -174,5 +219,4 @@ def _json_text(text: str) -> str:
             lines = lines[:-1]
         stripped = "\n".join(lines).strip()
     return stripped
-
 
