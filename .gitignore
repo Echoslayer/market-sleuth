@@ -1,0 +1,15 @@
+# scenario data (not redistributable — see spec)
+/data/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+
+# pipeline
+pipeline/.venv/
+pipeline/__pycache__/
+pipeline/**/__pycache__/
+*.pyc
+
+# OS
+.DS_Store
