@@ -1,89 +1,61 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
-import { visibleBeforeSubmit } from "../game/revealCutoff";
-import { deriveCorrectDirection, type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
+import {
+  canSubmit,
+  changeSettings,
+  chooseDirection,
+  chooseNewsMode,
+  loadScenario,
+  type RoundState,
+  startRound,
+  submit as submitRound,
+  toggleNews,
+  updateNews,
+} from "../game/round";
+import { deriveCorrectDirection, type Direction, type RoundScore } from "../game/scoreRound";
 import { cn } from "../lib/cn";
-import type { Scenario } from "../types/scenario";
 import { DirectionPicker } from "./DirectionPicker";
 import { NewsList } from "./NewsList";
 import { NewsSwipeDeck } from "./NewsSwipeDeck";
 import { PriceChart } from "./PriceChart";
-import { type Settings, SettingsDialog } from "./SettingsDialog";
+import { SettingsDialog } from "./SettingsDialog";
 
 // ponytail: real scenario data is gitignored (licensing), so public deploys
 // fall back to the checked-in toy fixture; VITE_SCENARIO_ID seeds the default,
 // localStorage (set via the settings dialog) overrides it.
 const defaultScenarioId = import.meta.env.VITE_SCENARIO_ID ?? "toy-chipmaker-rally";
 
-function loadSettings(): Settings {
+function readStoredSettings(): unknown {
   const stored = localStorage.getItem("settings");
-  return {
-    scenarioId: defaultScenarioId,
-    revealAll: false,
-    falsePositiveWeight: 1,
-    cutoffOverride: "",
-    debug: false,
-    ...(stored ? JSON.parse(stored) : {}),
-  };
+  return stored ? JSON.parse(stored) : null;
 }
 
 export function GameRound() {
-  const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [direction, setDirection] = useState<Direction>("hold");
-  const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
-  const [newsDeckComplete, setNewsDeckComplete] = useState(false);
-  const [newsMode, setNewsMode] = useState<"swipe" | "list">("swipe");
-  const [score, setScore] = useState<RoundScore | null>(null);
-  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const [round, setRound] = useState<RoundState>(() => startRound(readStoredSettings(), defaultScenarioId));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { scenario, visibleScenario, activeCutoff, settings, direction, selectedNewsIds, newsMode, score } = round;
 
   useEffect(() => {
     localStorage.setItem("settings", JSON.stringify(settings));
   }, [settings]);
 
   useEffect(() => {
-    setScenario(null);
-    setScore(null);
-    setSelectedNewsIds([]);
-    setNewsDeckComplete(false);
-    setDirection("hold");
-    localJsonScenarioDataProvider.getScenario(settings.scenarioId).then(setScenario);
+    localJsonScenarioDataProvider
+      .getScenario(settings.scenarioId)
+      .then((loaded) => setRound((current) => loadScenario(current, loaded)));
   }, [settings.scenarioId]);
 
-  const toggleNews = (id: string) => {
-    setSelectedNewsIds((current) =>
-      current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id],
-    );
-  };
+  const onToggleNews = (id: string) => setRound((current) => toggleNews(current, id));
 
-  const updateNewsSelection = useCallback((ids: string[], complete: boolean) => {
-    setSelectedNewsIds(ids);
-    setNewsDeckComplete(complete);
-  }, []);
-
-  const submit = () => {
-    if (!scenario) return;
-    setScore(scoreRound({ direction, selectedNewsIds }, scenario, { falsePositiveWeight: settings.falsePositiveWeight }));
-  };
-
-  // Before submit, a scenario with a revealCutoffDate only shows what a
-  // player at that point in time would have seen (predictive mode). With
-  // no cutoff, everything is visible from the start (detective mode).
-  // scoreRound always sees the full scenario — a hidden key event the
-  // player couldn't select just shows up as "missed" once revealed.
-  // Memoised so newsItems keeps a stable identity (the swipe deck resets
-  // when it changes). Must stay ABOVE the early return — hooks run
-  // unconditionally — so it tolerates a null scenario.
-  const displayScenario = useMemo(
-    () =>
-      scenario && !score && !settings.revealAll
-        ? visibleBeforeSubmit({ ...scenario, revealCutoffDate: settings.cutoffOverride || scenario.revealCutoffDate })
-        : scenario,
-    [scenario, score, settings.cutoffOverride, settings.revealAll],
+  // Load-bearing: NewsSwipeDeck keeps onChange in its effect deps, so an
+  // unstable identity here loops. Goes away when the deck's state moves into
+  // the round module and this becomes onDecide.
+  const updateNewsSelection = useCallback(
+    (ids: string[], complete: boolean) => setRound((current) => updateNews(current, ids, complete)),
+    [],
   );
-  const activeCutoff = settings.cutoffOverride || scenario?.revealCutoffDate;
 
-  if (!scenario || !displayScenario) {
+  if (!scenario || !visibleScenario) {
     return (
       <main className="grid min-h-screen place-items-center bg-slate-100 text-slate-600">
         <p>Loading scenario…</p>
@@ -121,7 +93,7 @@ export function GameRound() {
         <SettingsDialog
           open={settingsOpen}
           settings={settings}
-          onChange={setSettings}
+          onChange={(next) => setRound((current) => changeSettings(current, next))}
           onClose={() => setSettingsOpen(false)}
         />
 
@@ -130,17 +102,21 @@ export function GameRound() {
             <div>
               <h2 className="text-lg font-semibold">Price Chart</h2>
               <p className="text-sm text-slate-600">
-                {!score && !settings.revealAll && activeCutoff
+                {activeCutoff
                   ? `Showing action through ${activeCutoff} — the rest unlocks after you submit.`
                   : "Visible market action for this round."}
               </p>
             </div>
-            <PriceChart priceSeries={displayScenario.priceSeries} />
+            <PriceChart priceSeries={visibleScenario.priceSeries} />
           </div>
 
           <aside className="space-y-4">
             <h2 className="text-lg font-semibold">Direction</h2>
-            <DirectionPicker value={direction} onChange={setDirection} disabled={Boolean(score)} />
+            <DirectionPicker
+              value={direction}
+              onChange={(next) => setRound((current) => chooseDirection(current, next))}
+              disabled={Boolean(score)}
+            />
             {!score && settings.debug ? (
               <div className="rounded border border-teal-300 bg-white p-3 text-sm font-medium text-teal-700">
                 Correct direction: {deriveCorrectDirection(scenario)}
@@ -150,8 +126,8 @@ export function GameRound() {
             {!score ? (
               <button
                 type="button"
-                onClick={submit}
-                disabled={newsMode === "swipe" && !newsDeckComplete}
+                onClick={() => setRound(submitRound)}
+                disabled={!canSubmit(round)}
                 className="h-11 w-full rounded bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit Round
@@ -170,7 +146,7 @@ export function GameRound() {
                     <button
                       key={mode}
                       type="button"
-                      onClick={() => setNewsMode(mode)}
+                      onClick={() => setRound((current) => chooseNewsMode(current, mode))}
                       className={cn(
                         "px-3 py-1.5 font-medium capitalize",
                         newsMode === mode ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50",
@@ -184,16 +160,16 @@ export function GameRound() {
             </div>
             {score ? (
               <NewsList
-                newsItems={displayScenario.newsItems}
+                newsItems={visibleScenario.newsItems}
                 selectedNewsIds={selectedNewsIds}
-                onToggle={toggleNews}
+                onToggle={onToggleNews}
                 score={score}
               />
             ) : newsMode === "list" ? (
               <NewsList
-                newsItems={displayScenario.newsItems}
+                newsItems={visibleScenario.newsItems}
                 selectedNewsIds={selectedNewsIds}
-                onToggle={toggleNews}
+                onToggle={onToggleNews}
                 debugKeyEvents={settings.debug}
               />
             ) : (
@@ -203,7 +179,7 @@ export function GameRound() {
                     Switch to list mode to see key-event marks.
                   </p>
                 ) : null}
-                <NewsSwipeDeck newsItems={displayScenario.newsItems} onChange={updateNewsSelection} />
+                <NewsSwipeDeck newsItems={visibleScenario.newsItems} onChange={updateNewsSelection} />
               </>
             )}
           </div>

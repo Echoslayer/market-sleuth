@@ -1,17 +1,10 @@
 import { useEffect, useRef } from "react";
+import type { Settings } from "../game/round";
 
 // ponytail: hardcoded — public deploys only ship the toy fixture (real
 // scenarios are gitignored for licensing), so a filesystem scan would 404
 // in prod anyway. Add IDs here as local scenarios are built.
 export const SCENARIO_IDS = ["toy-chipmaker-rally", "tsmc-2023-ai-rally", "nflx-2022-subscriber-shock"];
-
-export type Settings = {
-  scenarioId: string;
-  revealAll: boolean;
-  falsePositiveWeight: number;
-  cutoffOverride: string;
-  debug: boolean;
-};
 
 type SettingsDialogProps = {
   open: boolean;
