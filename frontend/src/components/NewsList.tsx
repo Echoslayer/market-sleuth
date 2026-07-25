@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { RoundScore } from "../game/scoreRound";
 import { cn } from "../lib/cn";
 import type { NewsItem } from "../types/scenario";
+import { NewsDetailDialog } from "./NewsDetailDialog";
 
 type NewsListProps = {
   newsItems: NewsItem[];
@@ -11,33 +13,33 @@ type NewsListProps = {
 
 export function NewsList({ newsItems, selectedNewsIds, onToggle, score }: NewsListProps) {
   const selected = new Set(selectedNewsIds);
+  const [openItem, setOpenItem] = useState<NewsItem | null>(null);
 
   return (
     <div className="space-y-3">
       {newsItems.map((item) => (
-        <label
-          key={item.id}
-          className="block rounded border border-slate-200 bg-white p-4 shadow-sm"
-        >
-          <div className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 accent-slate-900"
-              checked={selected.has(item.id)}
-              disabled={Boolean(score)}
-              onChange={() => onToggle(item.id)}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium text-slate-950">{item.headline}</p>
-                <span className="text-xs text-slate-500">{item.date}</span>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-700">{item.content}</p>
-              {score ? <NewsResult item={item} verdict={verdictFor(item, score)} /> : null}
+        <div key={item.id} className="flex items-center gap-3 rounded border border-slate-200 bg-white p-4 shadow-sm">
+          <button type="button" onClick={() => setOpenItem(item)} className="min-w-0 flex-1 text-left">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium text-slate-950 underline decoration-slate-300 underline-offset-4">
+                {item.headline}
+              </p>
+              <span className="text-xs text-slate-500">{item.date}</span>
             </div>
-          </div>
-        </label>
+            {score ? <NewsResult item={item} verdict={verdictFor(item, score)} /> : null}
+          </button>
+          <input
+            type="checkbox"
+            aria-label={`Mark "${item.headline}" as key event`}
+            className="h-5 w-5 shrink-0 accent-slate-900"
+            checked={selected.has(item.id)}
+            disabled={Boolean(score)}
+            onChange={() => onToggle(item.id)}
+          />
+        </div>
       ))}
+
+      <NewsDetailDialog item={openItem} onClose={() => setOpenItem(null)} />
     </div>
   );
 }

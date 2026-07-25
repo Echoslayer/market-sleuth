@@ -14,6 +14,7 @@ export function GameRound() {
   const [direction, setDirection] = useState<Direction>("hold");
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [newsDeckComplete, setNewsDeckComplete] = useState(false);
+  const [newsMode, setNewsMode] = useState<"swipe" | "list">("swipe");
   const [score, setScore] = useState<RoundScore | null>(null);
 
   useEffect(() => {
@@ -100,7 +101,7 @@ export function GameRound() {
               <button
                 type="button"
                 onClick={submit}
-                disabled={!newsDeckComplete}
+                disabled={newsMode === "swipe" && !newsDeckComplete}
                 className="h-11 w-full rounded bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit Round
@@ -111,7 +112,26 @@ export function GameRound() {
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">News</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">News</h2>
+              {!score ? (
+                <div className="flex rounded border border-slate-300 bg-white text-sm">
+                  {(["swipe", "list"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setNewsMode(mode)}
+                      className={cn(
+                        "px-3 py-1.5 font-medium capitalize",
+                        newsMode === mode ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50",
+                      )}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             {score ? (
               <NewsList
                 newsItems={displayScenario.newsItems}
@@ -119,6 +139,8 @@ export function GameRound() {
                 onToggle={toggleNews}
                 score={score}
               />
+            ) : newsMode === "list" ? (
+              <NewsList newsItems={displayScenario.newsItems} selectedNewsIds={selectedNewsIds} onToggle={toggleNews} />
             ) : (
               <NewsSwipeDeck newsItems={displayScenario.newsItems} onChange={updateNewsSelection} />
             )}
