@@ -6,7 +6,6 @@ export type SwipeCard = {
 
 export type SwipeDecision<TCard extends SwipeCard = SwipeCard> = {
   card: TCard;
-  newsId: string;
   kept: boolean;
 };
 
@@ -34,7 +33,7 @@ export function decide<TCard extends SwipeCard>(
   const kept = direction === "right";
   return {
     remaining,
-    history: [...state.history, { card, newsId: card.id, kept }],
+    history: [...state.history, { card, kept }],
     selectedNewsIds: kept ? [...state.selectedNewsIds, card.id] : state.selectedNewsIds,
   };
 }
@@ -47,7 +46,7 @@ export function undo<TCard extends SwipeCard>(state: SwipeDeckState<TCard>): Swi
     remaining: [last.card, ...state.remaining],
     history: state.history.slice(0, -1),
     selectedNewsIds: last.kept
-      ? state.selectedNewsIds.filter((newsId) => newsId !== last.newsId)
+      ? state.selectedNewsIds.filter((newsId) => newsId !== last.card.id)
       : state.selectedNewsIds,
   };
 }

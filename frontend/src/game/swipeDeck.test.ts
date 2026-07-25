@@ -8,9 +8,9 @@ describe("swipeDeck", () => {
     const state = decide(decide(createSwipeDeck(cards), "right"), "left");
 
     expect(state.selectedNewsIds).toEqual(["a"]);
-    expect(state.history.map((decision) => ({ newsId: decision.newsId, kept: decision.kept }))).toEqual([
-      { newsId: "a", kept: true },
-      { newsId: "b", kept: false },
+    expect(state.history.map((decision) => ({ id: decision.card.id, kept: decision.kept }))).toEqual([
+      { id: "a", kept: true },
+      { id: "b", kept: false },
     ]);
   });
 
