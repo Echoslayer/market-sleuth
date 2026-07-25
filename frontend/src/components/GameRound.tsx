@@ -1,13 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
 import { visibleBeforeSubmit } from "../game/revealCutoff";
-import { type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
+import { deriveCorrectDirection, type Direction, type RoundScore, scoreRound } from "../game/scoreRound";
 import { cn } from "../lib/cn";
 import type { Scenario } from "../types/scenario";
 import { DirectionPicker } from "./DirectionPicker";
 import { NewsList } from "./NewsList";
 import { NewsSwipeDeck } from "./NewsSwipeDeck";
 import { PriceChart } from "./PriceChart";
+import { type Settings, SettingsDialog } from "./SettingsDialog";
+
+// ponytail: real scenario data is gitignored (licensing), so public deploys
+// fall back to the checked-in toy fixture; VITE_SCENARIO_ID seeds the default,
+// localStorage (set via the settings dialog) overrides it.
+const defaultScenarioId = import.meta.env.VITE_SCENARIO_ID ?? "toy-chipmaker-rally";
+
+function loadSettings(): Settings {
+  const stored = localStorage.getItem("settings");
+  return {
+    scenarioId: defaultScenarioId,
+    revealAll: false,
+    falsePositiveWeight: 1,
+    cutoffOverride: "",
+    debug: false,
+    ...(stored ? JSON.parse(stored) : {}),
+  };
+}
 
 export function GameRound() {
   const [scenario, setScenario] = useState<Scenario | null>(null);
@@ -16,14 +34,21 @@ export function GameRound() {
   const [newsDeckComplete, setNewsDeckComplete] = useState(false);
   const [newsMode, setNewsMode] = useState<"swipe" | "list">("swipe");
   const [score, setScore] = useState<RoundScore | null>(null);
+  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
-    // ponytail: real scenario data is gitignored (licensing), so public
-    // deploys fall back to the checked-in toy fixture; override locally via
-    // frontend/.env.local (VITE_SCENARIO_ID=tsmc-2023-ai-rally).
-    const scenarioId = import.meta.env.VITE_SCENARIO_ID ?? "toy-chipmaker-rally";
-    localJsonScenarioDataProvider.getScenario(scenarioId).then(setScenario);
-  }, []);
+    localStorage.setItem("settings", JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    setScenario(null);
+    setScore(null);
+    setSelectedNewsIds([]);
+    setNewsDeckComplete(false);
+    setDirection("hold");
+    localJsonScenarioDataProvider.getScenario(settings.scenarioId).then(setScenario);
+  }, [settings.scenarioId]);
 
   const toggleNews = (id: string) => {
     setSelectedNewsIds((current) =>
@@ -38,7 +63,7 @@ export function GameRound() {
 
   const submit = () => {
     if (!scenario) return;
-    setScore(scoreRound({ direction, selectedNewsIds }, scenario));
+    setScore(scoreRound({ direction, selectedNewsIds }, scenario, { falsePositiveWeight: settings.falsePositiveWeight }));
   };
 
   // Before submit, a scenario with a revealCutoffDate only shows what a
@@ -50,9 +75,13 @@ export function GameRound() {
   // when it changes). Must stay ABOVE the early return — hooks run
   // unconditionally — so it tolerates a null scenario.
   const displayScenario = useMemo(
-    () => (scenario && !score ? visibleBeforeSubmit(scenario) : scenario),
-    [scenario, score],
+    () =>
+      scenario && !score && !settings.revealAll
+        ? visibleBeforeSubmit({ ...scenario, revealCutoffDate: settings.cutoffOverride || scenario.revealCutoffDate })
+        : scenario,
+    [scenario, score, settings.cutoffOverride, settings.revealAll],
   );
+  const activeCutoff = settings.cutoffOverride || scenario?.revealCutoffDate;
 
   if (!scenario || !displayScenario) {
     return (
@@ -65,7 +94,7 @@ export function GameRound() {
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-2 border-b border-slate-300 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <header className="sticky top-0 z-10 flex flex-col gap-2 border-b border-slate-300 bg-slate-100 py-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-slate-500">{scenario.stockTicker}</p>
             <h1 className="text-3xl font-semibold">{scenario.stockName}</h1>
@@ -73,20 +102,36 @@ export function GameRound() {
               {scenario.dateRange.start} to {scenario.dateRange.end}
             </p>
           </div>
-          {score ? (
-            <div className="rounded border border-slate-300 bg-white px-4 py-3 text-sm">
-              <span className="font-semibold">News score:</span> {score.newsScore} / {score.newsScoreMax}
-            </div>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {score ? (
+              <div className="rounded border border-slate-300 bg-white px-4 py-3 text-sm">
+                <span className="font-semibold">News score:</span> {score.newsScore} / {score.newsScoreMax}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              aria-label="Settings"
+              onClick={() => setSettingsOpen(true)}
+              className="rounded border border-slate-300 bg-white px-3 py-2 text-lg leading-none text-slate-600 hover:bg-slate-50"
+            >
+              ⚙︎
+            </button>
+          </div>
         </header>
+        <SettingsDialog
+          open={settingsOpen}
+          settings={settings}
+          onChange={setSettings}
+          onClose={() => setSettingsOpen(false)}
+        />
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold">Price Chart</h2>
               <p className="text-sm text-slate-600">
-                {!score && scenario.revealCutoffDate
-                  ? `Showing action through ${scenario.revealCutoffDate} — the rest unlocks after you submit.`
+                {!score && !settings.revealAll && activeCutoff
+                  ? `Showing action through ${activeCutoff} — the rest unlocks after you submit.`
                   : "Visible market action for this round."}
               </p>
             </div>
@@ -96,6 +141,11 @@ export function GameRound() {
           <aside className="space-y-4">
             <h2 className="text-lg font-semibold">Direction</h2>
             <DirectionPicker value={direction} onChange={setDirection} disabled={Boolean(score)} />
+            {!score && settings.debug ? (
+              <div className="rounded border border-teal-300 bg-white p-3 text-sm font-medium text-teal-700">
+                Correct direction: {deriveCorrectDirection(scenario)}
+              </div>
+            ) : null}
             {score ? <DirectionResult direction={direction} score={score} /> : null}
             {!score ? (
               <button
@@ -140,9 +190,21 @@ export function GameRound() {
                 score={score}
               />
             ) : newsMode === "list" ? (
-              <NewsList newsItems={displayScenario.newsItems} selectedNewsIds={selectedNewsIds} onToggle={toggleNews} />
+              <NewsList
+                newsItems={displayScenario.newsItems}
+                selectedNewsIds={selectedNewsIds}
+                onToggle={toggleNews}
+                debugKeyEvents={settings.debug}
+              />
             ) : (
-              <NewsSwipeDeck newsItems={displayScenario.newsItems} onChange={updateNewsSelection} />
+              <>
+                {settings.debug ? (
+                  <p className="rounded border border-teal-300 bg-white p-3 text-sm text-teal-700">
+                    Switch to list mode to see key-event marks.
+                  </p>
+                ) : null}
+                <NewsSwipeDeck newsItems={displayScenario.newsItems} onChange={updateNewsSelection} />
+              </>
             )}
           </div>
 

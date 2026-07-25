@@ -9,9 +9,10 @@ type NewsListProps = {
   selectedNewsIds: string[];
   onToggle: (id: string) => void;
   score?: RoundScore;
+  debugKeyEvents?: boolean;
 };
 
-export function NewsList({ newsItems, selectedNewsIds, onToggle, score }: NewsListProps) {
+export function NewsList({ newsItems, selectedNewsIds, onToggle, score, debugKeyEvents = false }: NewsListProps) {
   const selected = new Set(selectedNewsIds);
   const [openItem, setOpenItem] = useState<NewsItem | null>(null);
 
@@ -27,6 +28,7 @@ export function NewsList({ newsItems, selectedNewsIds, onToggle, score }: NewsLi
               <span className="text-xs text-slate-500">{item.date}</span>
             </div>
             {score ? <NewsResult item={item} verdict={verdictFor(item, score)} /> : null}
+            {!score && debugKeyEvents && item.isKeyEvent ? <p className="mt-2 text-sm font-medium text-teal-700">Key event</p> : null}
           </button>
           <input
             type="checkbox"

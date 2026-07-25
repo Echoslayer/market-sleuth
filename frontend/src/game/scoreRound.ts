@@ -19,6 +19,10 @@ export type RoundScore = {
   };
 };
 
+export type ScoreConfig = {
+  falsePositiveWeight?: number;
+};
+
 export function deriveCorrectDirection(scenario: Scenario): Direction {
   const first = scenario.priceSeries[0];
   const last = scenario.priceSeries.at(-1);
@@ -35,7 +39,7 @@ export function deriveCorrectDirection(scenario: Scenario): Direction {
   return "hold";
 }
 
-export function scoreRound(selection: RoundSelection, scenario: Scenario): RoundScore {
+export function scoreRound(selection: RoundSelection, scenario: Scenario, config: ScoreConfig = {}): RoundScore {
   const correctDirection = deriveCorrectDirection(scenario);
   const selectedIds = new Set(selection.selectedNewsIds);
   const keyEvents = scenario.newsItems.filter((item) => item.isKeyEvent);
@@ -44,7 +48,7 @@ export function scoreRound(selection: RoundSelection, scenario: Scenario): Round
   const falsePositives = scenario.newsItems.filter((item) => !item.isKeyEvent && selectedIds.has(item.id));
   const newsScoreMax = sumImportance(keyEvents);
   const earned = sumImportance(selectedKeyEvents);
-  const penalty = sumImportance(falsePositives);
+  const penalty = sumImportance(falsePositives) * (config.falsePositiveWeight ?? 1);
 
   return {
     directionScore: selection.direction === correctDirection ? 1 : 0,

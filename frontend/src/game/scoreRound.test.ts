@@ -74,6 +74,26 @@ describe("scoreRound", () => {
     expect(score.breakdown.falsePositives.map((item) => item.id)).toEqual(["routine-board-meeting"]);
   });
 
+  it("can disable false-positive penalty", () => {
+    const score = scoreRound(
+      { direction: "buy", selectedNewsIds: ["cloud-customer-order", "routine-board-meeting"] },
+      toyScenario,
+      { falsePositiveWeight: 0 },
+    );
+
+    expect(score.newsScore).toBe(5);
+  });
+
+  it("can double false-positive penalty and still clamps at zero", () => {
+    const score = scoreRound(
+      { direction: "buy", selectedNewsIds: ["routine-board-meeting", "utility-maintenance"] },
+      toyScenario,
+      { falsePositiveWeight: 2 },
+    );
+
+    expect(score.newsScore).toBe(0);
+  });
+
   it("does not let penalties push news score below zero", () => {
     const score = scoreRound(
       { direction: "buy", selectedNewsIds: ["routine-board-meeting", "utility-maintenance"] },
