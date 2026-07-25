@@ -45,9 +45,13 @@ Real scenario data is **not redistributable**: `/data/`, `pipeline/scenarios/`, 
 
 ### Frontend game logic
 
-Pure logic lives in `frontend/src/game/` with vitest tests (`scoreRound.ts`, `revealCutoff.ts`, `swipeDeck.ts`); React components in `src/components/` stay thin. Two modes driven by data, not code: a scenario with `revealCutoffDate` plays in predictive mode (news/prices after the cutoff hidden until submit), without it in detective mode. `scoreRound` always receives the full scenario regardless of what is displayed.
+Pure logic lives in `frontend/src/game/` with vitest tests (`round.ts`, `scoreRound.ts`, `revealCutoff.ts`, `swipeDeck.ts`); React components in `src/components/` stay thin. Two modes driven by data, not code: a scenario with `revealCutoffDate` plays in predictive mode (news/prices after the cutoff hidden until submit), without it in detective mode. `scoreRound` always receives the full scenario regardless of what is displayed.
 
-News input is a Tinder-style swipe deck (`NewsSwipeDeck`, native pointer events, no gesture library) over the pure reducer in `swipeDeck.ts` (right = key event, left = not, undo pops the history stack); tapping a card opens a native `<dialog>` with the full text and a "閱讀原文" link when the item has a `url`. The deck only produces `selectedNewsIds` — the `scoreRound` contract is unchanged. After submit, `NewsList` renders the same items with per-item verdicts.
+`round.ts` owns the whole round as one `RoundState` plus named transitions (`startRound`, `loadScenario`, `changeSettings`, `chooseDirection`, `chooseNewsMode`, `updateNews`, `toggleNews`, `submit`, `canSubmit`); `GameRound.tsx` is a shell that calls them and persists `settings` to `localStorage`. It holds both the full `scenario` and the derived `visibleScenario` — reveal precedence (submitted > revealAll > `cutoffOverride` > scenario cutoff) lives in one place. Transitions that cannot change the cutoff deliberately pass `visibleScenario` through untouched: a fresh filtered array identity resets the swipe deck. New round behaviour goes here, not into the component.
+
+News input is a Tinder-style swipe deck (`NewsSwipeDeck`, native pointer events, no gesture library) over the pure reducer in `swipeDeck.ts` (right = key event, left = not, undo pops the history stack), with a list mode as fallback; tapping a card opens `NewsDetailDialog` (native `<dialog>`) with the full text and a "閱讀原文" link when the item has a `url`. The deck only produces `selectedNewsIds` — the `scoreRound` contract is unchanged. After submit, `NewsList` renders the same items with per-item verdicts.
+
+The ⚙︎ dev settings panel (`SettingsDialog`, `Settings` in `round.ts`) switches scenario (IDs hardcoded in `SCENARIO_IDS`), reveals everything, sets `falsePositiveWeight` for scoring, overrides the cutoff, and toggles a pre-submit debug overlay. It is dev-only and meant to stay deletable in one file plus its `Settings` fields.
 
 ### Pipeline module layout
 
@@ -56,5 +60,6 @@ Deep-modules split (see `.scratch/news-scoring-redesign/spec.md`): `cli.py` is w
 ## Conventions
 
 - Prefer few deep modules over many shallow files; don't add abstractions ahead of need (spec explicitly removed speculative CSV paths).
-- Architecture/code review write-ups are written primarily in Traditional Chinese, named `YYYY-MM-DD-<topic>.md`, and saved to the private companion repo `market-sleuth-private` (`history/`), **not** the public repo — they may reference non-redistributable material. Specs and tickets stay public in `.scratch/`. Specs mix Traditional Chinese prose with English identifiers.
+- Write-ups go to the private companion repo `market-sleuth-private` (`history/`), **not** the public repo — they may reference non-redistributable material. This covers code review output, `improve-codebase-architecture-zh` architecture reports, and miss-capture notes. All are written primarily in Traditional Chinese and named `YYYY-MM-DD-<topic>.md`. Specs and tickets stay public in `.scratch/`; specs mix Traditional Chinese prose with English identifiers.
+- `AGENTS.md` (Codex) and `.agents/AGENTS.md` (Antigravity) only point back to this file plus tool-specific routing — project rules live here, never duplicated there.
 - Deploy: push to `main` builds `frontend/` and publishes to GitHub Pages (`.github/workflows/deploy.yml`) at https://echoslayer.github.io/market-sleuth/.
