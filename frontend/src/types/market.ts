@@ -17,7 +17,8 @@ export type MarketInstrument = {
   timezone: string;
 };
 
-export type MarketNewsCategory = "總經" | "產業" | "公司" | "財報" | "政策法規" | "其他";
+export const MARKET_NEWS_CATEGORIES = ["總經", "產業", "公司", "財報", "政策法規", "其他"] as const;
+export type MarketNewsCategory = (typeof MARKET_NEWS_CATEGORIES)[number];
 
 export type MarketNewsItem = {
   id: string;

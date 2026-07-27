@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import { selectMarketNews, type MarketNewsFilters } from "../market/selectMarketNews";
-import type { MarketInstrument, MarketNewsCategory, MarketNewsItem } from "../types/market";
-
-const categories: MarketNewsCategory[] = ["總經", "產業", "公司", "財報", "政策法規", "其他"];
+import {
+  MARKET_NEWS_CATEGORIES,
+  type MarketInstrument,
+  type MarketNewsCategory,
+  type MarketNewsItem,
+} from "../types/market";
 
 export function MarketNewsPanel({
   instruments,
@@ -100,7 +103,7 @@ export function MarketNewsPanel({
         <fieldset className="mt-4">
           <legend className="mb-2 text-xs font-medium text-zinc-600">分類</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {categories.map((category) => (
+            {MARKET_NEWS_CATEGORIES.map((category) => (
               <label key={category} className="flex min-h-8 items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -174,5 +177,9 @@ function NewsArticle({ item }: { item: MarketNewsItem }) {
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat("zh-TW", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Taipei",
+  }).format(new Date(value));
 }

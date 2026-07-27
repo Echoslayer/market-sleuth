@@ -1,4 +1,5 @@
 import type { MarketNewsCategory, MarketNewsItem } from "../types/market";
+import { taipeiDate } from "./taipeiDate";
 
 type CommonFilters = {
   startDate?: string;
@@ -12,7 +13,7 @@ export type MarketNewsFilters = CommonFilters &
 export function selectMarketNews(items: MarketNewsItem[], filters: MarketNewsFilters) {
   return items
     .filter((item) => {
-      const date = item.date.slice(0, 10);
+      const date = taipeiDate(item.date);
       return (
         (filters.scope === "market"
           ? item.symbols.length === 0

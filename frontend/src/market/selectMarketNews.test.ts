@@ -30,6 +30,18 @@ describe("selectMarketNews", () => {
     ).toEqual(["market-new", "market-old"]);
   });
 
+  it("uses the Taipei calendar date regardless of the source offset", () => {
+    const afterMidnightInTaipei = [item("late", "2026-07-24T17:00:00Z", [], ["總經"])];
+
+    expect(
+      selectMarketNews(afterMidnightInTaipei, {
+        scope: "market",
+        startDate: "2026-07-25",
+        endDate: "2026-07-25",
+      }).map(({ id }) => id),
+    ).toEqual(["late"]);
+  });
+
   it("matches any selected category", () => {
     expect(
       selectMarketNews(news, {
