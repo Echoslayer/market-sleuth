@@ -68,7 +68,9 @@ def build_market_snapshot_file(
         snapshot_id=config["id"],
         generated_at=generated_at,
         instruments=instruments,
-        price_rows_by_symbol={item["symbol"]: read_price_rows(item["symbol"], db_path) for item in instruments},
+        price_rows_by_symbol={
+            item["symbol"]: read_price_rows(item["symbol"], db_path, start=start, end=end) for item in instruments
+        },
         news_rows=news_rows,
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)

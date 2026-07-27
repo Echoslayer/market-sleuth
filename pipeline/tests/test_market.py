@@ -1,4 +1,8 @@
+from pathlib import Path
+
+from pipeline.db import connect
 from pipeline.market import build_market_snapshot
+from pipeline.prices import read_price_rows
 
 
 INSTRUMENTS = [
@@ -87,3 +91,20 @@ def test_build_market_snapshot_rejects_unknown_news_category() -> None:
         assert str(exc) == "unknown news category: 傳聞"
     else:
         raise AssertionError("expected invalid category to fail")
+
+
+def test_read_price_rows_can_limit_snapshot_range(tmp_path: Path) -> None:
+    db_path = tmp_path / "prices.db"
+    with connect(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO prices (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                ("2330.TW", "2025-12-31", 1, 1, 1, 1, 1),
+                ("2330.TW", "2026-01-02", 2, 2, 2, 2, 2),
+                ("2330.TW", "2026-02-01", 3, 3, 3, 3, 3),
+            ],
+        )
+
+    rows = read_price_rows("2330.TW", db_path, start="2026-01-01", end="2026-02-01")
+
+    assert [row["date"] for row in rows] == ["2026-01-02"]

@@ -37,15 +37,22 @@ def fetch_prices_to_sqlite(ticker: str, start: str, end: str, db_path: Path) -> 
         )
 
 
-def read_price_rows(ticker: str, db_path: Path) -> list[dict[str, Any]]:
+def read_price_rows(
+    ticker: str,
+    db_path: Path,
+    start: str | None = None,
+    end: str | None = None,
+) -> list[dict[str, Any]]:
     with connect(db_path) as conn:
         rows = conn.execute(
             """
             SELECT date, open, high, low, close, volume
             FROM prices
             WHERE ticker = ?
+              AND (? IS NULL OR date >= ?)
+              AND (? IS NULL OR date < ?)
             ORDER BY date
             """,
-            (ticker,),
+            (ticker, start, start, end, end),
         ).fetchall()
     return [dict(row) for row in rows]
