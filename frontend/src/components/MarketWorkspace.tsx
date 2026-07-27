@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMarketSnapshot } from "../data/marketDataProvider";
 import type { MarketInstrument, MarketSnapshot } from "../types/market";
+import { MarketPriceDetail } from "./MarketPriceDetail";
 
 const snapshotId = import.meta.env.VITE_MARKET_SNAPSHOT_ID ?? "toy-market-snapshot";
 
@@ -51,6 +52,7 @@ export function MarketWorkspace() {
             {snapshot.instruments.find((item) => item.symbol === selectedSymbol)?.name}{" "}
             <span className="text-sm font-normal text-zinc-500">{selectedSymbol}</span>
           </h2>
+          <MarketPriceDetail priceSeries={snapshot.priceSeries[selectedSymbol] ?? []} />
         </section>
       </div>
     </main>
