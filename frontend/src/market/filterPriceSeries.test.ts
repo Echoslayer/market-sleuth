@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PricePoint } from "../types/scenario";
-import { filterPriceSeries } from "./MarketPriceDetail";
+import { filterPriceSeries } from "./filterPriceSeries";
 
 const point = (date: string): PricePoint => ({ date, open: 1, high: 1, low: 1, close: 1, volume: 1 });
 
