@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { localJsonScenarioDataProvider } from "../data/scenarioDataProvider";
 import {
   canSubmit,
   changeSettings,
   chooseDirection,
   chooseNewsMode,
+  decideNews,
   loadScenario,
   type RoundState,
   startRound,
   submit as submitRound,
   toggleNews,
-  updateNews,
+  undoNews,
 } from "../game/round";
 import { deriveCorrectDirection, type Direction, type RoundScore } from "../game/scoreRound";
 import { cn } from "../lib/cn";
@@ -33,7 +34,8 @@ function readStoredSettings(): unknown {
 export function GameRound() {
   const [round, setRound] = useState<RoundState>(() => startRound(readStoredSettings(), defaultScenarioId));
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { scenario, visibleScenario, activeCutoff, settings, direction, selectedNewsIds, newsMode, score } = round;
+  const { scenario, visibleScenario, activeCutoff, settings, direction, deck, newsMode, score } = round;
+  const selectedNewsIds = deck.selectedNewsIds;
 
   useEffect(() => {
     localStorage.setItem("settings", JSON.stringify(settings));
@@ -46,14 +48,6 @@ export function GameRound() {
   }, [settings.scenarioId]);
 
   const onToggleNews = (id: string) => setRound((current) => toggleNews(current, id));
-
-  // Load-bearing: NewsSwipeDeck keeps onChange in its effect deps, so an
-  // unstable identity here loops. Goes away when the deck's state moves into
-  // the round module and this becomes onDecide.
-  const updateNewsSelection = useCallback(
-    (ids: string[], complete: boolean) => setRound((current) => updateNews(current, ids, complete)),
-    [],
-  );
 
   if (!scenario || !visibleScenario) {
     return (
@@ -179,7 +173,11 @@ export function GameRound() {
                     Switch to list mode to see key-event marks.
                   </p>
                 ) : null}
-                <NewsSwipeDeck newsItems={visibleScenario.newsItems} onChange={updateNewsSelection} />
+                <NewsSwipeDeck
+                  deck={deck}
+                  onDecide={(direction) => setRound((current) => decideNews(current, direction))}
+                  onUndo={() => setRound(undoNews)}
+                />
               </>
             )}
           </div>

@@ -1,42 +1,38 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
-import { createSwipeDeck, decide, isComplete, undo, type SwipeDeckState, type SwipeDirection } from "../game/swipeDeck";
+import { useRef, useState, type PointerEvent } from "react";
+import { isComplete, type SwipeDeckState, type SwipeDirection } from "../game/swipeDeck";
 import { cn } from "../lib/cn";
 import type { NewsItem } from "../types/scenario";
 import { NewsDetailDialog } from "./NewsDetailDialog";
 
 type NewsSwipeDeckProps = {
-  newsItems: NewsItem[];
-  onChange: (selectedNewsIds: string[], complete: boolean) => void;
+  deck: SwipeDeckState<NewsItem>;
+  onDecide: (direction: SwipeDirection) => void;
+  onUndo: () => void;
 };
 
 const SWIPE_THRESHOLD = 110;
 
-export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
-  const [deck, setDeck] = useState<SwipeDeckState<NewsItem>>(() => createSwipeDeck(newsItems));
+export function NewsSwipeDeck({ deck, onDecide, onUndo }: NewsSwipeDeckProps) {
   const [drag, setDrag] = useState({ x: 0, dragging: false });
+  const [outgoing, setOutgoing] = useState<{ card: NewsItem; x: number } | null>(null);
   const [openItem, setOpenItem] = useState<NewsItem | null>(null);
   const startX = useRef(0);
   const moved = useRef(false);
+  const animating = useRef(false);
   const topCard = deck.remaining[0];
-  const nextCards = deck.remaining.slice(1, 3);
-
-  useEffect(() => {
-    const nextDeck = createSwipeDeck(newsItems);
-    setDeck(nextDeck);
-    onChange(nextDeck.selectedNewsIds, isComplete(nextDeck));
-  }, [newsItems, onChange]);
-
-  useEffect(() => {
-    onChange(deck.selectedNewsIds, isComplete(deck));
-  }, [deck, onChange]);
-
-  const progress = useMemo(() => newsItems.length - deck.remaining.length, [deck.remaining.length, newsItems.length]);
+  const shownCard = outgoing?.card ?? topCard;
+  const nextCards = deck.remaining.slice(outgoing ? 0 : 1, outgoing ? 2 : 3);
+  const total = deck.history.length + deck.remaining.length;
 
   const makeDecision = (direction: SwipeDirection) => {
-    setDrag({ x: direction === "right" ? 420 : -420, dragging: false });
+    if (!topCard || animating.current) return;
+    animating.current = true;
+    setOutgoing({ card: topCard, x: direction === "right" ? 420 : -420 });
+    setDrag({ x: 0, dragging: false });
+    onDecide(direction);
     window.setTimeout(() => {
-      setDeck((current) => decide(current, direction));
-      setDrag({ x: 0, dragging: false });
+      animating.current = false;
+      setOutgoing(null);
     }, 160);
   };
 
@@ -64,20 +60,20 @@ export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
   };
 
   const openDialog = () => {
-    if (!topCard || moved.current) return;
-    setOpenItem(topCard);
+    if (!shownCard || moved.current || animating.current) return;
+    setOpenItem(shownCard);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>
-          {progress} / {newsItems.length} decided
+          {deck.history.length} / {total} decided
         </span>
         <button
           type="button"
-          onClick={() => setDeck((current) => undo(current))}
-          disabled={deck.history.length === 0}
+          onClick={onUndo}
+          disabled={deck.history.length === 0 || Boolean(outgoing)}
           className="rounded border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Undo
@@ -102,13 +98,17 @@ export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
           />
         ))}
 
-        {topCard ? (
+        {shownCard ? (
           <article
+            key={shownCard.id}
             className={cn(
               "absolute inset-3 touch-none select-none rounded border border-slate-200 bg-white p-5 shadow-sm",
               drag.dragging ? "cursor-grabbing" : "cursor-grab transition-transform duration-200",
+              outgoing && "pointer-events-none",
             )}
-            style={{ transform: `translateX(${drag.x}px) rotate(${drag.x / 22}deg)` }}
+            style={{
+              transform: `translateX(${outgoing?.x ?? drag.x}px) rotate(${(outgoing?.x ?? drag.x) / 22}deg)`,
+            }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -116,11 +116,11 @@ export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
             onClick={openDialog}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-semibold text-slate-950">{topCard.headline}</h3>
-              <span className="text-xs text-slate-500">{topCard.date}</span>
+              <h3 className="font-semibold text-slate-950">{shownCard.headline}</h3>
+              <span className="text-xs text-slate-500">{shownCard.date}</span>
             </div>
             <p className="mt-4 max-h-48 overflow-hidden text-sm leading-6 text-slate-700">
-              {topCard.content || "請點連結閱讀原文"}
+              {shownCard.content || "請點連結閱讀原文"}
             </p>
           </article>
         ) : null}
@@ -131,7 +131,7 @@ export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
           type="button"
           aria-label="Mark news as not key"
           onClick={() => makeDecision("left")}
-          disabled={!topCard}
+          disabled={!topCard || Boolean(outgoing)}
           className="h-11 rounded border border-red-200 bg-white text-xl font-semibold text-red-700 shadow-sm hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           ✗
@@ -140,7 +140,7 @@ export function NewsSwipeDeck({ newsItems, onChange }: NewsSwipeDeckProps) {
           type="button"
           aria-label="Mark news as key"
           onClick={() => makeDecision("right")}
-          disabled={!topCard}
+          disabled={!topCard || Boolean(outgoing)}
           className="h-11 rounded border border-teal-200 bg-white text-xl font-semibold text-teal-700 shadow-sm hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           ✓

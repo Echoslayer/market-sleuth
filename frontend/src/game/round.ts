@@ -1,6 +1,13 @@
-import type { Scenario } from "../types/scenario";
+import type { NewsItem, Scenario } from "../types/scenario";
 import { visibleBeforeSubmit } from "./revealCutoff";
 import { type Direction, type RoundScore, scoreRound } from "./scoreRound";
+import {
+  createSwipeDeck,
+  decide,
+  type SwipeDeckState,
+  type SwipeDirection,
+  undo,
+} from "./swipeDeck";
 
 export type NewsMode = "swipe" | "list";
 
@@ -21,8 +28,8 @@ export type RoundState = {
   /** The cutoff currently being applied, or undefined when nothing is hidden. */
   activeCutoff: string | undefined;
   direction: Direction;
-  selectedNewsIds: string[];
-  newsDeckComplete: boolean;
+  deck: SwipeDeckState<NewsItem>;
+  listOverrideIds: string[];
   newsMode: NewsMode;
   score: RoundScore | null;
 };
@@ -34,8 +41,8 @@ const blankRound: Omit<RoundState, "settings" | "newsMode"> = {
   visibleScenario: null,
   activeCutoff: undefined,
   direction: "hold",
-  selectedNewsIds: [],
-  newsDeckComplete: false,
+  deck: createSwipeDeck<NewsItem>([]),
+  listOverrideIds: [],
   score: null,
 };
 
@@ -44,12 +51,24 @@ export function startRound(stored: unknown, defaultScenarioId: string): RoundSta
 }
 
 export function loadScenario(state: RoundState, scenario: Scenario): RoundState {
-  return withVisible({ ...state, scenario });
+  const next = withVisible({ ...state, scenario });
+  return {
+    ...next,
+    deck: createSwipeDeck(next.visibleScenario?.newsItems ?? []),
+    listOverrideIds: [],
+  };
 }
 
 export function changeSettings(state: RoundState, settings: Settings): RoundState {
   const switched = settings.scenarioId !== state.settings.scenarioId;
-  return withVisible({ ...state, ...(switched ? blankRound : {}), settings });
+  const next = withVisible({ ...state, ...(switched ? blankRound : {}), settings });
+  const before = state.visibleScenario?.newsItems ?? [];
+  const after = next.visibleScenario?.newsItems ?? [];
+  const changed = before.length !== after.length || before.some((item, index) => item.id !== after[index]?.id);
+
+  return changed
+    ? { ...next, deck: createSwipeDeck(after), listOverrideIds: [] }
+    : next;
 }
 
 export function submit(state: RoundState): RoundState {
@@ -57,7 +76,7 @@ export function submit(state: RoundState): RoundState {
 
   return withVisible({
     ...state,
-    score: scoreRound({ direction: state.direction, selectedNewsIds: state.selectedNewsIds }, state.scenario, {
+    score: scoreRound({ direction: state.direction, selectedNewsIds: state.deck.selectedNewsIds }, state.scenario, {
       falsePositiveWeight: state.settings.falsePositiveWeight,
     }),
   });
@@ -75,22 +94,53 @@ export function chooseNewsMode(state: RoundState, newsMode: NewsMode): RoundStat
   return { ...state, newsMode };
 }
 
-export function updateNews(state: RoundState, selectedNewsIds: string[], newsDeckComplete: boolean): RoundState {
-  return { ...state, selectedNewsIds, newsDeckComplete };
+export function decideNews(state: RoundState, direction: SwipeDirection): RoundState {
+  const card = state.deck.remaining[0];
+  if (!card) return state;
+
+  const deck = decide(
+    {
+      ...state.deck,
+      selectedNewsIds: state.deck.selectedNewsIds.filter((id) => id !== card.id),
+    },
+    direction,
+  );
+  return {
+    ...state,
+    deck,
+    listOverrideIds: state.listOverrideIds.filter((id) => id !== card.id),
+  };
+}
+
+export function undoNews(state: RoundState): RoundState {
+  const card = state.deck.history.at(-1)?.card;
+  const selectedNewsIds = state.deck.selectedNewsIds;
+  const deck = undo(state.deck);
+  const nextDeck =
+    card && state.listOverrideIds.includes(card.id) ? { ...deck, selectedNewsIds } : deck;
+
+  return {
+    ...state,
+    deck: nextDeck,
+  };
 }
 
 export function toggleNews(state: RoundState, id: string): RoundState {
+  const selectedNewsIds = state.deck.selectedNewsIds.includes(id)
+    ? state.deck.selectedNewsIds.filter((selectedId) => selectedId !== id)
+    : [...state.deck.selectedNewsIds, id];
   return {
     ...state,
-    selectedNewsIds: state.selectedNewsIds.includes(id)
-      ? state.selectedNewsIds.filter((selectedId) => selectedId !== id)
-      : [...state.selectedNewsIds, id],
+    deck: { ...state.deck, selectedNewsIds },
+    listOverrideIds: state.listOverrideIds.includes(id)
+      ? state.listOverrideIds
+      : [...state.listOverrideIds, id],
   };
 }
 
 export function canSubmit(state: RoundState): boolean {
   if (!state.scenario || state.score) return false;
-  return state.newsMode === "list" || state.newsDeckComplete;
+  return state.newsMode === "list" || state.deck.remaining.length === 0;
 }
 
 function withVisible(state: RoundState): RoundState {

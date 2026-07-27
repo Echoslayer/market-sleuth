@@ -129,11 +129,15 @@ settings 的 defaults merge 本身是純的，由 `startRound` 接收 localStora
 
 `scoreRound`、`revealCutoff`、`swipeDeck` 維持獨立，由 round module 呼叫。三者都已有測試，且深度足夠；吸收進 round module 只會讓它變成一個什麼都做的 module，並讓既有測試失去對象。
 
-### news swipe deck 的狀態這次不搬
+### news swipe deck 的狀態搬進 round module
 
-deck 狀態留在它自己的 component，round module 以 `updateNews(state, ids, complete)` 接收結果。這保留了「牌組把整份選擇回吐給 parent」這個介面形狀——它本身是個已知的缺點，但拆掉它需要一併重新接上翻牌動畫的時序，屬於另一次改動。
+deck 是新聞答案、翻牌進度與完成度的唯一來源；頂層的 `selectedNewsIds` 與 `newsDeckComplete` 移除。list 模式直接更新 deck 的答案，但不推進翻牌進度。
 
-已知代價：牌組是否翻完這件事會同時存在於 deck 與 round 兩處。
+list 在既有 swipe 後做的修改是較新的玩家意圖，undo 不得覆蓋它。round 以最小的 `listOverrideIds` 記住這項資訊；重新 swipe 該卡或重設牌組時清除標記。既有 `swipeDeck` 純 module 維持不變。
+
+swipe 越過門檻時立即更新 round state，component 只保留 outgoing card 跑完 160ms 飛出動畫。動畫期間鎖住牌組內的再次判斷與 undo，但允許切換模式；因此切換或立即提交都不會漏掉已成立的判斷。
+
+reveal-all 或 cutoff 真的改變可見新聞集合時重設整副牌；無關設定不重設。
 
 ### 不影響的範圍
 
@@ -162,6 +166,10 @@ scenario JSON 的 schema、pipeline 的任何部分、dev settings panel 的所�
 6. 缺少新欄位的舊 settings blob 被補上預設值。
 7. 提交後可見範圍變成完整 scenario。
 8. swipe 模式未翻完不可提交，list 模式可以。
+9. swipe/list 來回切換後，翻牌進度與答案不變。
+10. list 覆寫 swipe 答案後 undo，較新的 list 答案不被覆蓋。
+11. 重新 swipe 同一張卡時，新判斷取代 list 答案。
+12. 可見新聞集合改變時重設牌組，無關設定則保留。
 
 不測的部分：`GameRound` 的 JSX、`SettingsDialog`、localStorage 的實際讀寫、fetch effect。這些是 I/O 與呈現，依專案慣例（component 保持輕薄、邏輯住在遊戲邏輯層）不做單元測試。
 
@@ -169,7 +177,6 @@ scenario JSON 的 schema、pipeline 的任何部分、dev settings panel 的所�
 
 ## Out of Scope
 
-- **把 news swipe deck 的狀態提到 round module**——已知的下一步，需要一併處理翻牌動畫的時序，另案處理。
 - **架構檢視中的其他候選方案**——scenario 合約的 parse seam、pipeline 的 staging 讀取 seam、把比較結果的排版移出 CLI wiring，三者與本案互不相干。
 - **`deriveCorrectDirection` 的方向門檻調整**——dev settings panel spec 已明確排除，此處沿用。
 - **注入 scenario data provider**——會讓 module 失去純度，且目前只有一個實作。
@@ -180,7 +187,6 @@ scenario JSON 的 schema、pipeline 的任何部分、dev settings panel 的所�
 ## Further Notes
 
 - **derived 欄位的已知代價。** `visibleScenario` 只由三個轉換重算。若日後新增第四個會影響 cutoff 或 scenario 的轉換而忘了重算，畫面會靜靜停在舊的可見集。identity 那條測試抓得到「多算」，抓不到「少算」。這是換掉 `useMemo` 的價格，接受它。
-- **重複的事實。** 牌組是否翻完會同時存在於 deck 與 round，直到 deck 狀態被提上來為止。
 - **這次重構的證據基礎。** `GameRound` 在最近二十五個 commit 中被改動九次，是全 repo 最高；整頁空白那次修復（hooks 順序違規）是這個 module 形狀直接造成的故障。
 - **domain 詞彙。** 這次替一個既有但未命名的概念定了名——**round**。專案目前沒有 `CONTEXT.md`；是否建立並收錄 round、reveal precedence、visible scenario 這幾個詞，是一個尚未決定的獨立問題。
 - **歸檔位置。** 這個 repo 沒有設定 issue tracker 與 triage 詞彙，因此本 spec 依專案自身慣例歸檔於 `.scratch/<feature>/`，而非發佈為 issue。

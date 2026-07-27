@@ -6,11 +6,12 @@ import {
   changeSettings,
   chooseDirection,
   chooseNewsMode,
+  decideNews,
   loadScenario,
   startRound,
   submit,
   toggleNews,
-  updateNews,
+  undoNews,
 } from "./round";
 
 // The toy fixture plus a cutoff that hides the second key event
@@ -21,6 +22,14 @@ const started = (stored: unknown = {}) => startRound(stored, "toy-chipmaker-rall
 const loaded = () => loadScenario(started(), cutoffScenario);
 
 describe("round invariants", () => {
+  it("keeps swipe progress and answers across news mode switches", () => {
+    const decided = decideNews(loaded(), "right");
+    const switched = chooseNewsMode(chooseNewsMode(decided, "list"), "swipe");
+
+    expect(switched.deck.history).toHaveLength(1);
+    expect(switched.deck.selectedNewsIds).toEqual(["routine-board-meeting"]);
+  });
+
   it("scores against the full scenario, so a hidden key event counts as missed", () => {
     const state = submit(chooseDirection(loaded(), "buy"));
 
@@ -34,7 +43,7 @@ describe("round invariants", () => {
 
     expect(chooseDirection(state, "buy").visibleScenario).toBe(state.visibleScenario);
     expect(chooseNewsMode(state, "list").visibleScenario).toBe(state.visibleScenario);
-    expect(updateNews(state, ["cloud-customer-order"], true).visibleScenario).toBe(state.visibleScenario);
+    expect(decideNews(state, "right").visibleScenario).toBe(state.visibleScenario);
   });
 });
 
@@ -82,40 +91,66 @@ describe("reveal precedence", () => {
 });
 
 describe("toggleNews", () => {
+  it("keeps a newer list answer when undoing an older swipe", () => {
+    const swiped = decideNews(loaded(), "left");
+    const listChanged = toggleNews(swiped, "routine-board-meeting");
+    const undone = undoNews(listChanged);
+
+    expect(undone.deck.remaining[0].id).toBe("routine-board-meeting");
+    expect(undone.deck.selectedNewsIds).toEqual(["routine-board-meeting"]);
+  });
+
+  it("lets a new swipe replace a list answer", () => {
+    const listChanged = toggleNews(loaded(), "routine-board-meeting");
+    const swiped = decideNews(listChanged, "left");
+
+    expect(swiped.deck.selectedNewsIds).toEqual([]);
+    expect(swiped.listOverrideIds).toEqual([]);
+  });
+
   it("adds and removes an id without touching the rest of the round", () => {
     const state = loaded();
     const picked = toggleNews(state, "cloud-customer-order");
 
-    expect(picked.selectedNewsIds).toEqual(["cloud-customer-order"]);
-    expect(toggleNews(picked, "cloud-customer-order").selectedNewsIds).toEqual([]);
+    expect(picked.deck.selectedNewsIds).toEqual(["cloud-customer-order"]);
+    expect(toggleNews(picked, "cloud-customer-order").deck.selectedNewsIds).toEqual([]);
     expect(picked.visibleScenario).toBe(state.visibleScenario);
   });
 });
 
 describe("changeSettings", () => {
   it("clears the round when the scenario changes", () => {
-    const mid = chooseDirection(updateNews(loaded(), ["cloud-customer-order"], true), "buy");
+    const mid = chooseDirection(decideNews(loaded(), "right"), "buy");
     const after = changeSettings(mid, { ...mid.settings, scenarioId: "nflx-2022-subscriber-shock" });
 
     expect(after.scenario).toBeNull();
     expect(after.visibleScenario).toBeNull();
-    expect(after.selectedNewsIds).toEqual([]);
-    expect(after.newsDeckComplete).toBe(false);
+    expect(after.deck.selectedNewsIds).toEqual([]);
+    expect(after.deck.history).toEqual([]);
     expect(after.direction).toBe("hold");
     expect(after.score).toBeNull();
   });
 
   it("keeps the round when an unrelated setting changes", () => {
-    const mid = chooseDirection(updateNews(loaded(), ["cloud-customer-order"], true), "buy");
+    const mid = chooseDirection(decideNews(loaded(), "right"), "buy");
     const after = changeSettings(mid, { ...mid.settings, falsePositiveWeight: 2 });
 
-    expect(after.selectedNewsIds).toEqual(["cloud-customer-order"]);
+    expect(after.deck.selectedNewsIds).toEqual(["routine-board-meeting"]);
     expect(after.direction).toBe("buy");
     expect(after.scenario).toBe(mid.scenario);
   });
 
+  it("resets the deck when settings change the visible news", () => {
+    const mid = decideNews(loaded(), "right");
+    const after = changeSettings(mid, { ...mid.settings, cutoffOverride: "2024-01-02" });
+
+    expect(after.deck.history).toEqual([]);
+    expect(after.deck.selectedNewsIds).toEqual([]);
+    expect(after.deck.remaining.map((item) => item.id)).toEqual(["routine-board-meeting"]);
+  });
+
   it("carries the false-positive weight through to scoring", () => {
-    const picked = updateNews(loaded(), ["cloud-customer-order", "routine-board-meeting"], true);
+    const picked = toggleNews(toggleNews(loaded(), "cloud-customer-order"), "routine-board-meeting");
     const lenient = changeSettings(picked, { ...picked.settings, falsePositiveWeight: 0 });
 
     expect(submit(picked).score?.newsScore).toBe(4);
@@ -146,7 +181,7 @@ describe("canSubmit", () => {
     const state = loaded();
 
     expect(canSubmit(state)).toBe(false);
-    expect(canSubmit(updateNews(state, [], true))).toBe(true);
+    expect(canSubmit(decideNews(decideNews(state, "left"), "left"))).toBe(true);
   });
 
   it("does not require a finished deck in list mode", () => {
