@@ -1,16 +1,18 @@
 # market-sleuth
 
-A history-replay game about telling real market-moving events apart from noise.
+A Taiwan-market workspace and history-replay game about telling real market-moving events apart from noise.
 
-Each level drops you into a real historical price move with only the news that was public at the time. You call a direction and pick the news you think actually caused the move — then the rest of the timeline unlocks so you can see how close you got.
+The default workspace shows a daily market snapshot with watchlist prices, candlestick and volume charts, and market or instrument news filters. The game drops you into a historical price move with only the news that was public at the time: call a direction, pick the news that caused the move, then reveal the rest of the timeline.
 
 Play it at <https://echoslayer.github.io/market-sleuth/>.
 
 ## Status
 
-MVP playable. The game loop works end to end, with news judged by swiping cards Tinder-style (right = key event, left = noise) and a native-dialog detail view. Two real scenarios are built and playable locally — TSMC 2330 (2023 AI rally) and Netflix (2022 Q1 subscriber shock) — but their news is not redistributable, so the GitHub Pages build (deployed on every push to `main`) ships only the toy fixture. Two modes: detective (default) and an opt-in predictive reveal mode.
+The market workspace and game MVP are playable. The workspace supports a pipeline-managed watchlist, daily candlestick and volume charts, period selection, and news filtering by scope, date, and category. The game judges news with Tinder-style cards (right = key event, left = noise) and supports detective and predictive reveal modes.
 
-Specs and ticket breakdowns live under [`.scratch/`](.scratch/) — [`stock-game-mvp/`](.scratch/stock-game-mvp/) for the MVP, [`news-scoring-redesign/`](.scratch/news-scoring-redesign/) for the pipeline rework, [`real-news-rollout/`](.scratch/real-news-rollout/) for real-news collection, scoring comparison, and the swipe UI.
+Real market snapshots and scenarios are local-only because their source data is not redistributable. The public build ships toy data; two real game scenarios are also playable locally.
+
+Specs and ticket breakdowns live under [`.scratch/`](.scratch/), including [`market-workspace/`](.scratch/market-workspace/), [`stock-game-mvp/`](.scratch/stock-game-mvp/), [`news-scoring-redesign/`](.scratch/news-scoring-redesign/), and [`real-news-rollout/`](.scratch/real-news-rollout/).
 
 ## Stack
 

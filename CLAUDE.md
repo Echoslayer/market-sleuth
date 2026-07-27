@@ -24,11 +24,17 @@ Pipeline (`pipeline/`, uv):
 uv run pytest                          # all tests
 uv run pytest tests/test_scoring.py    # single test file
 uv run pipeline <subcommand>           # CLI, see below
+uv run pipeline build-market-snapshot --help
 ```
 
 ## Architecture
 
-Two independent halves joined by one contract: the scenario JSON schema. `pipeline/src/pipeline/scenario.py` (`build_scenario`) produces it; `frontend/src/types/scenario.ts` (`Scenario`) consumes it. Changing either side means changing both.
+The pipeline and frontend share two independent JSON contracts:
+
+- Game scenarios: `pipeline/src/pipeline/scenario.py` (`build_scenario`) produces them; `frontend/src/types/scenario.ts` (`Scenario`) consumes them.
+- Daily market snapshots: `pipeline/src/pipeline/market.py` (`build_market_snapshot`) produces them; `frontend/src/types/market.ts` (`MarketSnapshot`) consumes them.
+
+Changing a contract means changing both its producer and consumer. Keep `MarketSnapshot` separate from `Scenario`: games select market data and build their own interaction contract rather than inheriting a growing market schema.
 
 ### Data flow
 
@@ -39,9 +45,17 @@ Two independent halves joined by one contract: the scenario JSON schema. `pipeli
 5. `uv run pipeline build-scenario --score-method ...` — merges prices + raw news + the chosen method's scores into `data/<scenario-id>.json` (news items include `url` when present).
 6. Copy that JSON into `frontend/public/data/`; the frontend fetches `/data/<id>.json` at runtime (`scenarioDataProvider.ts`). Scenario is selected by `VITE_SCENARIO_ID` env var, defaulting to the checked-in toy fixture.
 
+The separate market path is `uv run pipeline build-market-snapshot`: it combines configured instruments, staged daily prices, and optional news into one daily JSON file. The frontend loads `VITE_MARKET_SNAPSHOT_ID` through `marketDataProvider.ts`, defaulting to the checked-in `toy-market-snapshot`.
+
 ### Licensing constraint (important)
 
-Real scenario data is **not redistributable**: `/data/`, `pipeline/scenarios/`, and `frontend/public/data/*` are gitignored — only `toy-chipmaker-rally.json` is allowlisted. Never commit real news content or generated scenario JSON. The deployed GitHub Pages build therefore only ships the toy fixture.
+Real scenario and market snapshot data is **not redistributable**: `/data/`, `pipeline/scenarios/`, and `frontend/public/data/*` are gitignored — only `toy-chipmaker-rally.json` is allowlisted. Never commit real news content or generated JSON. The deployed GitHub Pages build therefore only ships checked-in toy data.
+
+### Market workspace
+
+`App.tsx` opens the market workspace by default and keeps the game as a separate top-level view without a router. `MarketWorkspace` loads one immutable daily `MarketSnapshot`, owns the selected instrument, and passes snapshot data to the price and news views.
+
+Pure market logic lives in `frontend/src/market/`: `filterPriceSeries` selects chart periods, while `selectMarketNews` applies market/instrument scope, inclusive Taipei date bounds, multi-category matching, and newest-first sorting. Keep these rules out of React components. Market news never contains or derives the game's hindsight-only `isKeyEvent`.
 
 ### Frontend game logic
 
