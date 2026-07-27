@@ -91,6 +91,17 @@ describe("reveal precedence", () => {
 });
 
 describe("toggleNews", () => {
+  it("decides left and right, then undo restores the previous card and answer", () => {
+    const left = decideNews(loaded(), "left");
+    const right = decideNews(left, "right");
+    const undone = undoNews(right);
+
+    expect(left.deck.selectedNewsIds).toEqual([]);
+    expect(right.deck.selectedNewsIds).toEqual(["cloud-customer-order"]);
+    expect(undone.deck.remaining[0].id).toBe("cloud-customer-order");
+    expect(undone.deck.selectedNewsIds).toEqual([]);
+  });
+
   it("keeps a newer list answer when undoing an older swipe", () => {
     const swiped = decideNews(loaded(), "left");
     const listChanged = toggleNews(swiped, "routine-board-meeting");

@@ -159,25 +159,27 @@ export function GameRound() {
                 onToggle={onToggleNews}
                 score={score}
               />
-            ) : newsMode === "list" ? (
-              <NewsList
-                newsItems={visibleScenario.newsItems}
-                selectedNewsIds={selectedNewsIds}
-                onToggle={onToggleNews}
-                debugKeyEvents={settings.debug}
-              />
             ) : (
               <>
-                {settings.debug ? (
+                {newsMode === "list" ? (
+                  <NewsList
+                    newsItems={visibleScenario.newsItems}
+                    selectedNewsIds={selectedNewsIds}
+                    onToggle={onToggleNews}
+                    debugKeyEvents={settings.debug}
+                  />
+                ) : settings.debug ? (
                   <p className="rounded border border-teal-300 bg-white p-3 text-sm text-teal-700">
                     Switch to list mode to see key-event marks.
                   </p>
                 ) : null}
-                <NewsSwipeDeck
-                  deck={deck}
-                  onDecide={(direction) => setRound((current) => decideNews(current, direction))}
-                  onUndo={() => setRound(undoNews)}
-                />
+                <div className={newsMode === "list" ? "hidden" : undefined}>
+                  <NewsSwipeDeck
+                    deck={deck}
+                    onDecide={(direction) => setRound((current) => decideNews(current, direction))}
+                    onUndo={() => setRound(undoNews)}
+                  />
+                </div>
               </>
             )}
           </div>
