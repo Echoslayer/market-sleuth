@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from pipeline.market import build_market_snapshot_file
 from pipeline.prices import fetch_prices_to_sqlite
 from pipeline.raw_news import import_raw_news
 from pipeline.scenario import build_scenario_file
@@ -63,6 +64,16 @@ def main() -> None:
     build.add_argument("--reveal-cutoff-date", default=None)
     build.set_defaults(func=_build_scenario_file)
 
+    market = subparsers.add_parser("build-market-snapshot", help="Build a daily market workspace JSON file.")
+    market.add_argument("--config", type=Path, required=True)
+    market.add_argument("--start", required=True)
+    market.add_argument("--end", required=True)
+    market.add_argument("--generated-at", required=True)
+    market.add_argument("--news-file", type=Path)
+    market.add_argument("--db", type=Path, default=DEFAULT_DB)
+    market.add_argument("--out", type=Path, required=True)
+    market.set_defaults(func=_build_market_snapshot_file)
+
     args = parser.parse_args()
     try:
         args.func(args)
@@ -110,6 +121,20 @@ def _build_scenario_file(args: argparse.Namespace) -> None:
         reveal_cutoff_date=args.reveal_cutoff_date,
     )
     print(out_path)
+
+
+def _build_market_snapshot_file(args: argparse.Namespace) -> None:
+    print(
+        build_market_snapshot_file(
+            config_path=args.config,
+            start=args.start,
+            end=args.end,
+            generated_at=args.generated_at,
+            db_path=args.db,
+            out_path=args.out,
+            news_path=args.news_file,
+        )
+    )
 
 
 def _read_json_list(path: Path) -> list[dict[str, Any]] | list[str]:

@@ -4,6 +4,7 @@
 # only the checked-in toy/dev fixture is allowlisted below
 frontend/public/data/*
 !frontend/public/data/toy-chipmaker-rally.json
+!frontend/public/data/toy-market-snapshot.json
 
 # frontend
 frontend/node_modules/
